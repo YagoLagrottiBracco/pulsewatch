@@ -8,7 +8,6 @@ const nextConfig = {
     serverActions: {
       enabled: true,
     },
-    optimizeCss: true,
   },
   // Security headers
   async headers() {
