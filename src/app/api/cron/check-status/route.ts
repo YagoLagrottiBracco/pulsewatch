@@ -34,7 +34,8 @@ export async function GET(request: NextRequest) {
     for (const store of stores || []) {
       try {
         // Verificar se a loja está online (ping básico)
-        const isOnline = await checkStoreStatus(store.url)
+        const checkResult = await checkStoreStatus(store.url)
+        const isOnline = checkResult.isOnline
         
         // Atualizar status se mudou
         if (store.is_online !== isOnline) {
@@ -68,7 +69,12 @@ export async function GET(request: NextRequest) {
 
         results.push({
           store: store.name,
+          url: store.url,
+          normalizedUrl: checkResult.normalizedUrl,
           status: isOnline ? 'online' : 'offline',
+          statusCode: checkResult.statusCode,
+          method: checkResult.method,
+          error: checkResult.error,
           changed: store.is_online !== isOnline
         })
       } catch (error) {
@@ -95,28 +101,43 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function checkStoreStatus(url: string): Promise<boolean> {
+interface CheckResult {
+  isOnline: boolean
+  normalizedUrl: string
+  statusCode?: number
+  method?: string
+  error?: string
+}
+
+async function checkStoreStatus(url: string): Promise<CheckResult> {
+  // Normalizar URL - adicionar https:// se não tiver protocolo
+  let normalizedUrl = url.trim()
+  if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+    normalizedUrl = `https://${normalizedUrl}`
+  }
+
+  // Tentar HEAD primeiro (mais rápido)
   try {
-    // Normalizar URL - adicionar https:// se não tiver protocolo
-    let normalizedUrl = url.trim()
-    if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
-      normalizedUrl = `https://${normalizedUrl}`
+    const headResponse = await fetch(normalizedUrl, {
+      method: 'HEAD',
+      redirect: 'follow',
+      signal: AbortSignal.timeout(10000), // 10s timeout
+    })
+    
+    if (headResponse.ok) {
+      return {
+        isOnline: true,
+        normalizedUrl,
+        statusCode: headResponse.status,
+        method: 'HEAD'
+      }
     }
+  } catch (headError) {
+    console.log(`HEAD failed for ${normalizedUrl}, trying GET:`, headError)
+  }
 
-    // Tentar HEAD primeiro (mais rápido)
-    try {
-      const headResponse = await fetch(normalizedUrl, {
-        method: 'HEAD',
-        redirect: 'follow',
-        signal: AbortSignal.timeout(10000), // 10s timeout
-      })
-      if (headResponse.ok) return true
-    } catch (headError) {
-      // Se HEAD falhar, tentar GET (alguns sites bloqueiam HEAD)
-      console.log(`HEAD failed for ${normalizedUrl}, trying GET`)
-    }
-
-    // Tentar GET
+  // Tentar GET
+  try {
     const getResponse = await fetch(normalizedUrl, {
       method: 'GET',
       redirect: 'follow',
@@ -126,9 +147,20 @@ async function checkStoreStatus(url: string): Promise<boolean> {
       },
     })
     
-    return getResponse.ok && getResponse.status < 400
+    const isOnline = getResponse.ok && getResponse.status < 400
+    
+    return {
+      isOnline,
+      normalizedUrl,
+      statusCode: getResponse.status,
+      method: 'GET'
+    }
   } catch (error) {
     console.error(`Failed to check ${url}:`, error)
-    return false
+    return {
+      isOnline: false,
+      normalizedUrl,
+      error: String(error)
+    }
   }
 }
