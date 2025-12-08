@@ -10,7 +10,7 @@ max_rows = 1000
 [db]
 port = 54322
 shadow_port = 54320
-major_version = 15
+major_version = 17
 
 [studio]
 enabled = true
@@ -29,8 +29,8 @@ file_size_limit = "50MiB"
 
 [auth]
 enabled = true
-site_url = "http://localhost:3000"
-additional_redirect_urls = ["https://localhost:3000"]
+site_url = "https://pulsewatch.click"
+additional_redirect_urls = ["https://pulsewatch.click"]
 jwt_expiry = 3600
 enable_signup = true
 
@@ -42,11 +42,3 @@ enable_confirmations = false
 # Edge Functions
 [[edge_runtime]]
 enabled = true
-
-# Cron Jobs (runs check_status every 10 minutes)
-[functions.check_status]
-verify_jwt = false
-
-# Scheduled to run every 10 minutes
-[functions.check_status.schedule]
-cron = "*/10 * * * *"

@@ -11,17 +11,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter()
   const pathname = usePathname()
   const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
   useEffect(() => {
     const supabase = createClient()
     
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) {
         router.push('/auth/login')
       } else {
         setUser(user)
+        
+        // Carregar perfil do usuário
+        const { data: profileData } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .single()
+        
+        if (profileData) {
+          setProfile(profileData)
+        }
+        
         setLoading(false)
       }
     })
@@ -58,7 +71,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside
         className={`${
           sidebarOpen ? 'w-64' : 'w-20'
-        } bg-card border-r transition-all duration-300 flex flex-col`}
+        } bg-card border-r transition-all duration-300 flex flex-col fixed h-screen`}
       >
         <div className="p-4 border-b flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -99,9 +112,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className={`${sidebarOpen ? 'mb-3' : 'mb-2'}`}>
             {sidebarOpen && user && (
               <div className="text-sm">
-                <p className="font-medium truncate">{user.email}</p>
-                <p className="text-xs text-muted-foreground">
-                  {user.user_metadata?.name || 'Usuário'}
+                <p className="font-medium truncate">
+                  {profile?.full_name || 'Usuário'}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {user.email}
                 </p>
               </div>
             )}
@@ -118,7 +133,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
+      <main className={`flex-1 overflow-auto ${
+        sidebarOpen ? 'ml-64' : 'ml-20'
+      } transition-all duration-300`}>
         <div className="container py-8">{children}</div>
       </main>
     </div>

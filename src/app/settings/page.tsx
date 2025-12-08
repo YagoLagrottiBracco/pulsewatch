@@ -44,7 +44,7 @@ export default function SettingsPage() {
       setProfile(data)
       setFormData({
         full_name: data.full_name || '',
-        email: data.email || '',
+        email: user.email || '', // Email vem do auth, não do perfil
         email_notifications: data.email_notifications ?? true,
         telegram_notifications: data.telegram_notifications ?? false,
         telegram_chat_id: data.telegram_chat_id || '',
@@ -87,9 +87,7 @@ export default function SettingsPage() {
   }
 
   const getTelegramLink = () => {
-    const botToken = process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN || 'SEU_BOT_TOKEN'
-    const botUsername = botToken.split(':')[0] // Simplificado, em produção use o username real
-    return `https://t.me/${botUsername}`
+    return 'https://t.me/PulseWatch_Bot'
   }
 
   if (loading) {
