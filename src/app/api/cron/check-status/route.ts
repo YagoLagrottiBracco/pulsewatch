@@ -97,12 +97,38 @@ export async function GET(request: NextRequest) {
 
 async function checkStoreStatus(url: string): Promise<boolean> {
   try {
-    const response = await fetch(url, {
-      method: 'HEAD',
-      signal: AbortSignal.timeout(10000), // 10s timeout
+    // Normalizar URL - adicionar https:// se não tiver protocolo
+    let normalizedUrl = url.trim()
+    if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+      normalizedUrl = `https://${normalizedUrl}`
+    }
+
+    // Tentar HEAD primeiro (mais rápido)
+    try {
+      const headResponse = await fetch(normalizedUrl, {
+        method: 'HEAD',
+        redirect: 'follow',
+        signal: AbortSignal.timeout(10000), // 10s timeout
+      })
+      if (headResponse.ok) return true
+    } catch (headError) {
+      // Se HEAD falhar, tentar GET (alguns sites bloqueiam HEAD)
+      console.log(`HEAD failed for ${normalizedUrl}, trying GET`)
+    }
+
+    // Tentar GET
+    const getResponse = await fetch(normalizedUrl, {
+      method: 'GET',
+      redirect: 'follow',
+      signal: AbortSignal.timeout(15000), // 15s timeout para GET
+      headers: {
+        'User-Agent': 'PulseWatch-Monitor/1.0',
+      },
     })
-    return response.ok
-  } catch {
+    
+    return getResponse.ok && getResponse.status < 400
+  } catch (error) {
+    console.error(`Failed to check ${url}:`, error)
     return false
   }
 }
