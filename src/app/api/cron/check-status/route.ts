@@ -33,16 +33,28 @@ export async function GET(request: NextRequest) {
     // Verificar cada loja
     for (const store of stores || []) {
       try {
+        // Validar se tem domain
+        if (!store.domain) {
+          results.push({
+            store: store.name,
+            domain: store.domain,
+            status: 'offline',
+            error: 'Domain not configured'
+          })
+          continue
+        }
+
         // Verificar se a loja está online (ping básico)
-        const checkResult = await checkStoreStatus(store.url)
+        const checkResult = await checkStoreStatus(store.domain)
         const isOnline = checkResult.isOnline
+        const newStatus = isOnline ? 'online' : 'offline'
         
         // Atualizar status se mudou
-        if (store.is_online !== isOnline) {
+        if (store.status !== newStatus) {
           await supabase
             .from('stores')
             .update({ 
-              is_online: isOnline,
+              status: newStatus,
               last_check: new Date().toISOString()
             })
             .eq('id', store.id)
@@ -51,9 +63,10 @@ export async function GET(request: NextRequest) {
           await supabase
             .from('alerts')
             .insert({
-              user_id: store.user_id,
               store_id: store.id,
               type: isOnline ? 'LOJA_ONLINE' : 'LOJA_OFFLINE',
+              severity: isOnline ? 'low' : 'high',
+              title: isOnline ? 'Loja Online' : 'Loja Offline',
               message: isOnline 
                 ? `A loja ${store.name} voltou a ficar online!`
                 : `A loja ${store.name} está offline!`,
@@ -69,13 +82,13 @@ export async function GET(request: NextRequest) {
 
         results.push({
           store: store.name,
-          url: store.url,
+          domain: store.domain,
           normalizedUrl: checkResult.normalizedUrl,
-          status: isOnline ? 'online' : 'offline',
+          status: newStatus,
           statusCode: checkResult.statusCode,
           method: checkResult.method,
           error: checkResult.error,
-          changed: store.is_online !== isOnline
+          changed: store.status !== newStatus
         })
       } catch (error) {
         console.error(`Erro ao verificar loja ${store.name}:`, error)
@@ -110,6 +123,15 @@ interface CheckResult {
 }
 
 async function checkStoreStatus(url: string): Promise<CheckResult> {
+  // Validar se URL existe
+  if (!url) {
+    return {
+      isOnline: false,
+      normalizedUrl: '',
+      error: 'Empty URL'
+    }
+  }
+
   // Normalizar URL - adicionar https:// se não tiver protocolo
   let normalizedUrl = url.trim()
   if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
