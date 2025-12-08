@@ -18,6 +18,8 @@ export default function StoresPage() {
   const [formData, setFormData] = useState({
     name: '',
     domain: '',
+    shopifyApiKey: '',
+    shopifyPassword: '',
   })
   const [detecting, setDetecting] = useState(false)
   const [detectedPlatform, setDetectedPlatform] = useState<any>(null)
