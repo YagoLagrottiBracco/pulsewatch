@@ -74,17 +74,26 @@ export default function StoresPage() {
       platform = await detectPlatform(formData.domain)
     }
 
+    let platformConfig = null
+    if (platform.platform === 'shopify' && formData.shopifyApiKey && formData.shopifyPassword) {
+      platformConfig = {
+        apiKey: formData.shopifyApiKey,
+        accessToken: formData.shopifyPassword,
+      }
+    }
+
     const { error } = await supabase.from('stores').insert({
       user_id: user.id,
       name: formData.name,
       domain: formData.domain,
       platform: platform.platform,
+      platform_config: platformConfig,
       status: 'checking',
       is_active: true,
     })
 
     if (!error) {
-      setFormData({ name: '', domain: '' })
+      setFormData({ name: '', domain: '', shopifyApiKey: '', shopifyPassword: '' })
       setDetectedPlatform(null)
       setShowAddForm(false)
       loadStores()
@@ -229,6 +238,43 @@ export default function StoresPage() {
                   </div>
                 )}
 
+                {detectedPlatform?.platform === 'shopify' && (
+                  <div className="space-y-4 p-4 border rounded-md">
+                    <p className="text-sm font-medium">Credenciais da API Shopify</p>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="shopifyApiKey">API Key</Label>
+                        <Input
+                          id="shopifyApiKey"
+                          type="password"
+                          placeholder="shpat_..."
+                          value={formData.shopifyApiKey}
+                          onChange={(e) =>
+                            setFormData({ ...formData, shopifyApiKey: e.target.value })
+                          }
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="shopifyPassword">Admin API Access Token</Label>
+                        <Input
+                          id="shopifyPassword"
+                          type="password"
+                          placeholder="shpat_..."
+                          value={formData.shopifyPassword}
+                          onChange={(e) =>
+                            setFormData({ ...formData, shopifyPassword: e.target.value })
+                          }
+                          required
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      📝 Você pode obter essas credenciais em: Shopify Admin → Settings → Apps and sales channels → Develop apps
+                    </p>
+                  </div>
+                )}
+
                 <div className="flex gap-2">
                   <Button type="submit">Adicionar</Button>
                   <Button
@@ -236,7 +282,7 @@ export default function StoresPage() {
                     variant="outline"
                     onClick={() => {
                       setShowAddForm(false)
-                      setFormData({ name: '', domain: '' })
+                      setFormData({ name: '', domain: '', shopifyApiKey: '', shopifyPassword: '' })
                       setDetectedPlatform(null)
                     }}
                   >

@@ -80,6 +80,16 @@ export async function GET(request: NextRequest) {
             .eq('id', store.id)
         }
 
+        // Sincronizar produtos se a loja estiver online e for Shopify
+        let productsSynced = 0
+        if (isOnline && store.platform === 'shopify' && store.platform_config) {
+          try {
+            productsSynced = await syncShopifyProducts(supabase, store)
+          } catch (syncError) {
+            console.error(`Erro ao sincronizar produtos da loja ${store.name}:`, syncError)
+          }
+        }
+
         results.push({
           store: store.name,
           domain: store.domain,
@@ -88,7 +98,8 @@ export async function GET(request: NextRequest) {
           statusCode: checkResult.statusCode,
           method: checkResult.method,
           error: checkResult.error,
-          changed: store.status !== newStatus
+          changed: store.status !== newStatus,
+          productsSynced
         })
       } catch (error) {
         console.error(`Erro ao verificar loja ${store.name}:`, error)
@@ -120,6 +131,64 @@ interface CheckResult {
   statusCode?: number
   method?: string
   error?: string
+}
+
+async function syncShopifyProducts(supabase: any, store: any): Promise<number> {
+  const config = store.platform_config
+  if (!config || !config.apiKey || !config.accessToken) {
+    return 0
+  }
+
+  try {
+    // URL da API Shopify para produtos
+    const shopifyUrl = `https://${store.domain}/admin/api/2024-01/products.json`
+    
+    const response = await fetch(shopifyUrl, {
+      headers: {
+        'X-Shopify-Access-Token': config.accessToken,
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Shopify API error: ${response.status}`)
+    }
+
+    const data = await response.json()
+    const products = data.products || []
+
+    let synced = 0
+    for (const product of products) {
+      // Pegar apenas a primeira variante para simplicidade
+      const variant = product.variants?.[0]
+      if (!variant) continue
+
+      const productData = {
+        store_id: store.id,
+        external_id: String(product.id),
+        name: product.title,
+        sku: variant.sku || null,
+        price: parseFloat(variant.price) || 0,
+        stock_quantity: variant.inventory_quantity || 0,
+        stock_status: variant.inventory_quantity > 0 ? 'in_stock' : 'out_of_stock',
+        last_synced: new Date().toISOString(),
+      }
+
+      // Upsert (insert ou update)
+      const { error } = await supabase
+        .from('products')
+        .upsert(productData, {
+          onConflict: 'store_id,external_id',
+        })
+
+      if (!error) synced++
+    }
+
+    return synced
+  } catch (error) {
+    console.error('Erro ao sincronizar produtos Shopify:', error)
+    throw error
+  }
 }
 
 async function checkStoreStatus(url: string): Promise<CheckResult> {
