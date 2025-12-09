@@ -82,11 +82,13 @@ export async function GET(request: NextRequest) {
 
         // Sincronizar produtos se a loja estiver online e for Shopify
         let productsSynced = 0
+        let syncError = null
         if (isOnline && store.platform === 'shopify' && store.platform_config) {
           try {
             productsSynced = await syncShopifyProducts(supabase, store)
-          } catch (syncError) {
-            console.error(`Erro ao sincronizar produtos da loja ${store.name}:`, syncError)
+          } catch (error) {
+            syncError = String(error)
+            console.error(`Erro ao sincronizar produtos da loja ${store.name}:`, error)
           }
         }
 
@@ -99,7 +101,10 @@ export async function GET(request: NextRequest) {
           method: checkResult.method,
           error: checkResult.error,
           changed: store.status !== newStatus,
-          productsSynced
+          productsSynced,
+          syncError,
+          hasShopifyConfig: !!store.platform_config,
+          platform: store.platform
         })
       } catch (error) {
         console.error(`Erro ao verificar loja ${store.name}:`, error)
@@ -135,13 +140,19 @@ interface CheckResult {
 
 async function syncShopifyProducts(supabase: any, store: any): Promise<number> {
   const config = store.platform_config
-  if (!config || !config.apiKey || !config.accessToken) {
+  if (!config || !config.accessToken) {
+    console.log(`Loja ${store.name} sem credenciais configuradas`)
     return 0
   }
 
   try {
+    // Limpar domain (remover https:// se tiver)
+    let domain = store.domain.replace(/^https?:\/\//, '')
+    
     // URL da API Shopify para produtos
-    const shopifyUrl = `https://${store.domain}/admin/api/2024-01/products.json`
+    const shopifyUrl = `https://${domain}/admin/api/2024-01/products.json`
+    
+    console.log(`Sincronizando produtos de ${store.name}: ${shopifyUrl}`)
     
     const response = await fetch(shopifyUrl, {
       headers: {
@@ -156,6 +167,8 @@ async function syncShopifyProducts(supabase: any, store: any): Promise<number> {
 
     const data = await response.json()
     const products = data.products || []
+    
+    console.log(`Encontrados ${products.length} produtos para ${store.name}`)
 
     let synced = 0
     for (const product of products) {

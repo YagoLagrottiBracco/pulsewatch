@@ -82,10 +82,13 @@ export default function StoresPage() {
       }
     }
 
+    // Normalizar domain (remover https:// ou http://)
+    const cleanDomain = formData.domain.replace(/^https?:\/\//, '')
+
     const { error } = await supabase.from('stores').insert({
       user_id: user.id,
       name: formData.name,
-      domain: formData.domain,
+      domain: cleanDomain,
       platform: platform.platform,
       platform_config: platformConfig,
       status: 'checking',
@@ -212,6 +215,7 @@ export default function StoresPage() {
                         onChange={(e) =>
                           setFormData({ ...formData, domain: e.target.value })
                         }
+                        onBlur={handleDetectPlatform}
                         required
                       />
                       <Button
@@ -223,6 +227,9 @@ export default function StoresPage() {
                         <RefreshCw className={`h-4 w-4 ${detecting ? 'animate-spin' : ''}`} />
                       </Button>
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      A plataforma será detectada automaticamente
+                    </p>
                   </div>
                 </div>
 
