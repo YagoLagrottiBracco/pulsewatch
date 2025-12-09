@@ -9,12 +9,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Store, Trash2, RefreshCw } from 'lucide-react'
+import { Plus, Store, Trash2, RefreshCw, Edit } from 'lucide-react'
 
 export default function StoresPage() {
   const [stores, setStores] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
+  const [editingStore, setEditingStore] = useState<any>(null)
   const [formData, setFormData] = useState({
     name: '',
     domain: '',
@@ -103,6 +104,63 @@ export default function StoresPage() {
     }
   }
 
+  const handleEditStore = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!editingStore) return
+
+    const supabase = createClient()
+
+    // Normalizar domain (remover https:// ou http://)
+    const cleanDomain = formData.domain.replace(/^https?:\/\//, '')
+
+    // Preparar platform_config
+    let platformConfig = editingStore.platform_config
+    if (detectedPlatform?.platform === 'shopify' && (formData.shopifyApiKey || formData.shopifyPassword)) {
+      platformConfig = {
+        ...platformConfig,
+        ...(formData.shopifyApiKey && { apiKey: formData.shopifyApiKey }),
+        ...(formData.shopifyPassword && { accessToken: formData.shopifyPassword }),
+      }
+    }
+
+    const { error } = await supabase
+      .from('stores')
+      .update({
+        name: formData.name,
+        domain: cleanDomain,
+        platform_config: platformConfig,
+      })
+      .eq('id', editingStore.id)
+
+    if (!error) {
+      setFormData({ name: '', domain: '', shopifyApiKey: '', shopifyPassword: '' })
+      setDetectedPlatform(null)
+      setEditingStore(null)
+      setShowAddForm(false)
+      loadStores()
+    }
+  }
+
+  const startEdit = (store: any) => {
+    setEditingStore(store)
+    setFormData({
+      name: store.name,
+      domain: store.domain,
+      shopifyApiKey: '',
+      shopifyPassword: '',
+    })
+    setDetectedPlatform({ platform: store.platform })
+    setShowAddForm(true)
+  }
+
+  const cancelEdit = () => {
+    setEditingStore(null)
+    setFormData({ name: '', domain: '', shopifyApiKey: '', shopifyPassword: '' })
+    setDetectedPlatform(null)
+    setShowAddForm(false)
+  }
+
   const handleDeleteStore = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir esta loja?')) return
 
@@ -180,17 +238,19 @@ export default function StoresPage() {
           </Button>
         </div>
 
-        {/* Add Store Form */}
+        {/* Add/Edit Store Form */}
         {showAddForm && (
           <Card>
             <CardHeader>
-              <CardTitle>Nova Loja</CardTitle>
+              <CardTitle>{editingStore ? 'Editar Loja' : 'Nova Loja'}</CardTitle>
               <CardDescription>
-                Adicione uma nova loja para monitoramento
+                {editingStore 
+                  ? 'Atualize as informações da loja' 
+                  : 'Adicione uma nova loja para monitoramento'}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleAddStore} className="space-y-4">
+              <form onSubmit={editingStore ? handleEditStore : handleAddStore} className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="name">Nome da Loja</Label>
@@ -247,19 +307,26 @@ export default function StoresPage() {
 
                 {detectedPlatform?.platform === 'shopify' && (
                   <div className="space-y-4 p-4 border rounded-md">
-                    <p className="text-sm font-medium">Credenciais da API Shopify</p>
+                    <p className="text-sm font-medium">
+                      Credenciais da API Shopify
+                      {editingStore && (
+                        <span className="text-xs font-normal text-muted-foreground ml-2">
+                          (Deixe vazio para manter as atuais)
+                        </span>
+                      )}
+                    </p>
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
                         <Label htmlFor="shopifyApiKey">API Key</Label>
                         <Input
                           id="shopifyApiKey"
                           type="password"
-                          placeholder="shpat_..."
+                          placeholder={editingStore ? "Manter atual" : "shpat_..."}
                           value={formData.shopifyApiKey}
                           onChange={(e) =>
                             setFormData({ ...formData, shopifyApiKey: e.target.value })
                           }
-                          required
+                          required={!editingStore}
                         />
                       </div>
                       <div className="space-y-2">
@@ -267,12 +334,12 @@ export default function StoresPage() {
                         <Input
                           id="shopifyPassword"
                           type="password"
-                          placeholder="shpat_..."
+                          placeholder={editingStore ? "Manter atual" : "shpat_..."}
                           value={formData.shopifyPassword}
                           onChange={(e) =>
                             setFormData({ ...formData, shopifyPassword: e.target.value })
                           }
-                          required
+                          required={!editingStore}
                         />
                       </div>
                     </div>
@@ -283,15 +350,13 @@ export default function StoresPage() {
                 )}
 
                 <div className="flex gap-2">
-                  <Button type="submit">Adicionar</Button>
+                  <Button type="submit">
+                    {editingStore ? 'Atualizar' : 'Adicionar'}
+                  </Button>
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => {
-                      setShowAddForm(false)
-                      setFormData({ name: '', domain: '', shopifyApiKey: '', shopifyPassword: '' })
-                      setDetectedPlatform(null)
-                    }}
+                    onClick={cancelEdit}
                   >
                     Cancelar
                   </Button>
@@ -358,6 +423,13 @@ export default function StoresPage() {
                         onClick={() => handleToggleStore(store.id, store.is_active)}
                       >
                         {store.is_active ? 'Pausar' : 'Ativar'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => startEdit(store)}
+                      >
+                        <Edit className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="destructive"

@@ -34,23 +34,72 @@ export default function SettingsPage() {
 
     if (!user) return
 
-    const { data } = await supabase
+    console.log('User data:', user)
+
+    const { data, error } = await supabase
       .from('user_profiles')
       .select('*')
       .eq('user_id', user.id)
       .single()
 
-    if (data) {
+    console.log('Profile data:', data, 'Error:', error)
+
+    // Se o perfil não existe, criar um
+    if (error && error.code === 'PGRST116') {
+      const { data: newProfile, error: createError } = await supabase
+        .from('user_profiles')
+        .insert({
+          user_id: user.id,
+          email: user.email || '',
+          full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+          email_notifications: true,
+          telegram_notifications: false,
+        })
+        .select()
+        .single()
+
+      console.log('Created new profile:', newProfile)
+
+      if (!createError && newProfile) {
+        setProfile(newProfile)
+        setFormData({
+          full_name: newProfile.full_name || '',
+          email: user.email || '',
+          email_notifications: newProfile.email_notifications ?? true,
+          telegram_notifications: newProfile.telegram_notifications ?? false,
+          telegram_chat_id: newProfile.telegram_chat_id || '',
+        })
+      } else {
+        // Fallback: mesmo com erro, mostrar email do usuário
+        setFormData({
+          full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+          email: user.email || '',
+          email_notifications: true,
+          telegram_notifications: false,
+          telegram_chat_id: '',
+        })
+      }
+    } else if (data) {
       setProfile(data)
       setFormData({
-        full_name: data.full_name || '',
+        full_name: data.full_name || user.user_metadata?.full_name || user.user_metadata?.name || '',
         email: user.email || '', // Email vem do auth, não do perfil
         email_notifications: data.email_notifications ?? true,
         telegram_notifications: data.telegram_notifications ?? false,
         telegram_chat_id: data.telegram_chat_id || '',
       })
+    } else {
+      // Fallback final: sempre mostrar pelo menos o email
+      setFormData({
+        full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+        email: user.email || '',
+        email_notifications: true,
+        telegram_notifications: false,
+        telegram_chat_id: '',
+      })
     }
 
+    console.log('Final formData:', formData)
     setLoading(false)
   }
 
@@ -318,24 +367,107 @@ export default function SettingsPage() {
           </div>
         </form>
 
-        {/* Account Info */}
+        {/* Account Info & Subscription */}
         <Card>
           <CardHeader>
-            <CardTitle>Informações da Conta</CardTitle>
+            <CardTitle>Plano & Assinatura</CardTitle>
+            <CardDescription>
+              Gerencie sua assinatura do PulseWatch
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Plano:</span>
-              <Badge>Gratuito</Badge>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Plano Atual</p>
+                <div className="flex items-center gap-2">
+                  {profile?.plan === 'pro' ? (
+                    <>
+                      <Badge className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+                        PRO
+                      </Badge>
+                      {profile?.subscription_status === 'active' && (
+                        <span className="text-xs text-green-600">✓ Ativo</span>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <Badge variant="outline">FREE</Badge>
+                      {profile?.trial_ends_at && 
+                        new Date(profile.trial_ends_at) > new Date() && (
+                        <span className="text-xs text-blue-600">
+                          Trial até {new Date(profile.trial_ends_at).toLocaleDateString('pt-BR')}
+                        </span>
+                      )}
+                      {profile?.trial_ends_at &&
+                        new Date(profile.trial_ends_at) <= new Date() && (
+                        <span className="text-xs text-red-600">
+                          Trial expirado
+                        </span>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+              
+              {profile?.plan !== 'pro' && (
+                <Button
+                  onClick={async () => {
+                    setSaving(true)
+                    try {
+                      const supabase = createClient()
+                      const { data: { user } } = await supabase.auth.getUser()
+                      
+                      const response = await fetch('/api/stripe/create-checkout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId: user?.id }),
+                      })
+                      
+                      const { url } = await response.json()
+                      if (url) window.location.href = url
+                    } catch (error) {
+                      console.error('Checkout error:', error)
+                    } finally {
+                      setSaving(false)
+                    }
+                  }}
+                  disabled={saving}
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                >
+                  ⚡ Upgrade para PRO
+                </Button>
+              )}
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Membro desde:</span>
-              <span>
-                {profile?.created_at
-                  ? new Date(profile.created_at).toLocaleDateString('pt-BR')
-                  : 'N/A'}
-              </span>
+
+            {profile?.plan === 'pro' && profile?.subscription_ends_at && (
+              <div className="text-sm text-muted-foreground">
+                Renovação em: {new Date(profile.subscription_ends_at).toLocaleDateString('pt-BR')}
+              </div>
+            )}
+
+            <div className="pt-4 border-t space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Membro desde:</span>
+                <span className="font-medium">
+                  {profile?.created_at
+                    ? new Date(profile.created_at).toLocaleDateString('pt-BR')
+                    : 'N/A'}
+                </span>
+              </div>
             </div>
+
+            {profile?.plan !== 'pro' && (
+              <div className="mt-4 p-4 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg border border-purple-200 dark:border-purple-800">
+                <p className="font-semibold mb-2">💎 Benefícios do Plano PRO:</p>
+                <ul className="text-sm space-y-1 text-muted-foreground">
+                  <li>✓ Lojas ilimitadas</li>
+                  <li>✓ Produtos ilimitados</li>
+                  <li>✓ Alertas em tempo real</li>
+                  <li>✓ Notificações por Email e Telegram</li>
+                  <li>✓ Suporte prioritário</li>
+                </ul>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

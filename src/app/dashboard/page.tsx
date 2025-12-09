@@ -27,45 +27,70 @@ export default function DashboardPage() {
 
     if (!user) return
 
-    // Buscar estatísticas
-    const [storesRes, productsRes, alertsRes] = await Promise.all([
-      supabase.from('stores').select('*', { count: 'exact' }).eq('user_id', user.id),
-      supabase.from('products').select('*', { count: 'exact' }).eq('user_id', user.id),
-      supabase.from('alerts').select('*', { count: 'exact' }).eq('is_read', false),
-    ])
+    // Buscar lojas do usuário primeiro
+    const { data: userStores } = await supabase
+      .from('stores')
+      .select('id, status')
+      .eq('user_id', user.id)
 
-    const storesOnline = storesRes.data?.filter((s) => s.status === 'online').length || 0
+    const storeIds = userStores?.map(s => s.id) || []
+    const storesOnline = userStores?.filter((s) => s.status === 'online').length || 0
+
+    // Buscar estatísticas
+    let productsCount = 0
+    let alertsCount = 0
+
+    if (storeIds.length > 0) {
+      const [productsRes, alertsRes] = await Promise.all([
+        supabase
+          .from('products')
+          .select('*', { count: 'exact', head: true })
+          .in('store_id', storeIds),
+        supabase
+          .from('alerts')
+          .select('*', { count: 'exact', head: true })
+          .in('store_id', storeIds)
+          .eq('is_read', false),
+      ])
+
+      productsCount = productsRes.count || 0
+      alertsCount = alertsRes.count || 0
+    }
 
     setStats({
-      stores: storesRes.count || 0,
-      products: productsRes.count || 0,
-      alerts: alertsRes.count || 0,
+      stores: userStores?.length || 0,
+      products: productsCount,
+      alerts: alertsCount,
       storesOnline,
     })
 
     // Buscar alertas recentes
-    const { data: alerts } = await supabase
-      .from('alerts')
-      .select('*, stores(name)')
-      .order('created_at', { ascending: false })
-      .limit(5)
+    if (storeIds.length > 0) {
+      const { data: alerts } = await supabase
+        .from('alerts')
+        .select('*, stores(name)')
+        .in('store_id', storeIds)
+        .order('created_at', { ascending: false })
+        .limit(5)
 
-    setRecentAlerts(alerts || [])
+      setRecentAlerts(alerts || [])
+    }
+
     setLoading(false)
   }
 
-  const getSeverityColor = (severity: string) => {
+  const getSeverityBadge = (severity: string) => {
     switch (severity) {
       case 'critical':
-        return 'destructive'
+        return <Badge className="bg-red-600 text-white hover:bg-red-700">Crítico</Badge>
       case 'high':
-        return 'destructive'
+        return <Badge className="bg-red-600 text-white hover:bg-red-700">Alto</Badge>
       case 'medium':
-        return 'default'
+        return <Badge className="bg-yellow-600 text-white hover:bg-yellow-700">Médio</Badge>
       case 'low':
-        return 'secondary'
+        return <Badge className="bg-green-600 text-white hover:bg-green-700">Baixo</Badge>
       default:
-        return 'default'
+        return <Badge variant="outline">{severity}</Badge>
     }
   }
 
@@ -171,9 +196,11 @@ export default function DashboardPage() {
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <Badge variant={getSeverityColor(alert.severity)}>
-                          {alert.severity}
-                        </Badge>
+                        {getSeverityBadge(alert.severity)}
+                        {!alert.is_read && 
+                          new Date().getTime() - new Date(alert.created_at).getTime() < 24 * 60 * 60 * 1000 && (
+                          <Badge className="bg-blue-600 text-white">NOVO</Badge>
+                        )}
                         <p className="font-medium">{alert.title}</p>
                       </div>
                       <p className="text-sm text-muted-foreground">

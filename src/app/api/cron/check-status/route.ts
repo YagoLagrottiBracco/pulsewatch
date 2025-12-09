@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { sendNotifications } from '@/services/notification'
 
 // Esta rota é chamada pelo Vercel Cron a cada 10 minutos
 export async function GET(request: NextRequest) {
@@ -59,19 +60,15 @@ export async function GET(request: NextRequest) {
             })
             .eq('id', store.id)
 
-          // Criar alerta
-          await supabase
-            .from('alerts')
-            .insert({
-              store_id: store.id,
-              type: isOnline ? 'LOJA_ONLINE' : 'LOJA_OFFLINE',
-              severity: isOnline ? 'low' : 'high',
-              title: isOnline ? 'Loja Online' : 'Loja Offline',
-              message: isOnline 
-                ? `A loja ${store.name} voltou a ficar online!`
-                : `A loja ${store.name} está offline!`,
-              is_read: false,
-            })
+          // Criar alerta com notificação
+          await createAlertWithNotification(supabase, store, {
+            type: isOnline ? 'LOJA_ONLINE' : 'LOJA_OFFLINE',
+            severity: isOnline ? 'low' : 'high',
+            title: isOnline ? 'Loja Online' : 'Loja Offline',
+            message: isOnline 
+              ? `A loja ${store.name} voltou a ficar online!`
+              : `A loja ${store.name} está offline!`,
+          })
         } else {
           // Apenas atualizar última verificação
           await supabase
@@ -138,6 +135,40 @@ interface CheckResult {
   error?: string
 }
 
+async function createAlertWithNotification(
+  supabase: any,
+  store: any,
+  alertData: {
+    type: string
+    severity: string
+    title: string
+    message: string
+    metadata?: any
+  }
+) {
+  // Criar alerta
+  const { error } = await supabase.from('alerts').insert({
+    store_id: store.id,
+    ...alertData,
+    is_read: false,
+  })
+
+  if (error) {
+    console.error('Erro ao criar alerta:', error)
+    return
+  }
+
+  // Enviar notificações (não aguarda para não bloquear)
+  sendNotifications({
+    userId: store.user_id,
+    storeId: store.id,
+    storeName: store.name,
+    alertType: alertData.type,
+    alertTitle: alertData.title,
+    alertMessage: alertData.message,
+  }).catch(err => console.error('Erro ao enviar notificações:', err))
+}
+
 async function syncShopifyProducts(supabase: any, store: any): Promise<number> {
   const config = store.platform_config
   if (!config || !config.accessToken) {
@@ -152,8 +183,6 @@ async function syncShopifyProducts(supabase: any, store: any): Promise<number> {
     // URL da API Shopify para produtos
     const shopifyUrl = `https://${domain}/admin/api/2024-01/products.json`
     
-    console.log(`Sincronizando produtos de ${store.name}: ${shopifyUrl}`)
-    
     const response = await fetch(shopifyUrl, {
       headers: {
         'X-Shopify-Access-Token': config.accessToken,
@@ -167,25 +196,42 @@ async function syncShopifyProducts(supabase: any, store: any): Promise<number> {
 
     const data = await response.json()
     const products = data.products || []
-    
-    console.log(`Encontrados ${products.length} produtos para ${store.name}`)
 
     let synced = 0
+    const lowStockThreshold = 5
+    
     for (const product of products) {
-      // Pegar apenas a primeira variante para simplicidade
       const variant = product.variants?.[0]
       if (!variant) continue
 
+      const stockQuantity = variant.inventory_quantity || 0
+      
+      // Montar URL do produto na loja
+      const productUrl = `https://${domain}/products/${product.handle}`
+      
+      // Pegar primeira categoria/tipo do produto
+      const category = product.product_type || product.tags?.[0] || 'Sem categoria'
+      
       const productData = {
         store_id: store.id,
         external_id: String(product.id),
         name: product.title,
         sku: variant.sku || null,
         price: parseFloat(variant.price) || 0,
-        stock_quantity: variant.inventory_quantity || 0,
-        stock_status: variant.inventory_quantity > 0 ? 'in_stock' : 'out_of_stock',
+        stock_quantity: stockQuantity,
+        stock_status: stockQuantity > 0 ? 'in_stock' : 'out_of_stock',
+        product_url: productUrl,
+        category: category,
         last_synced: new Date().toISOString(),
       }
+
+      // Buscar produto anterior para comparar
+      const { data: existingProduct } = await supabase
+        .from('products')
+        .select('stock_quantity, stock_status')
+        .eq('store_id', store.id)
+        .eq('external_id', String(product.id))
+        .single()
 
       // Upsert (insert ou update)
       const { error } = await supabase
@@ -194,7 +240,43 @@ async function syncShopifyProducts(supabase: any, store: any): Promise<number> {
           onConflict: 'store_id,external_id',
         })
 
-      if (!error) synced++
+      if (!error) {
+        synced++
+
+        // Criar alertas baseado em mudanças de estoque
+        if (existingProduct) {
+          // Produto ficou sem estoque
+          if (existingProduct.stock_quantity > 0 && stockQuantity === 0) {
+            await createAlertWithNotification(supabase, store, {
+              type: 'ESTOQUE_ZERADO',
+              severity: 'high',
+              title: 'Produto sem Estoque',
+              message: `O produto "${product.title}" ficou sem estoque!`,
+              metadata: { product_id: product.id, sku: variant.sku },
+            })
+          }
+          // Produto voltou ao estoque
+          else if (existingProduct.stock_quantity === 0 && stockQuantity > 0) {
+            await createAlertWithNotification(supabase, store, {
+              type: 'ESTOQUE_DISPONIVEL',
+              severity: 'low',
+              title: 'Produto Voltou ao Estoque',
+              message: `O produto "${product.title}" voltou ao estoque (${stockQuantity} unidades)`,
+              metadata: { product_id: product.id, sku: variant.sku },
+            })
+          }
+          // Estoque baixo
+          else if (stockQuantity > 0 && stockQuantity <= lowStockThreshold && existingProduct.stock_quantity > lowStockThreshold) {
+            await createAlertWithNotification(supabase, store, {
+              type: 'ESTOQUE_BAIXO',
+              severity: 'medium',
+              title: 'Estoque Baixo',
+              message: `O produto "${product.title}" está com estoque baixo (${stockQuantity} unidades)`,
+              metadata: { product_id: product.id, sku: variant.sku, threshold: lowStockThreshold },
+            })
+          }
+        }
+      }
     }
 
     return synced

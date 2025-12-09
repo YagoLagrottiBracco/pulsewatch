@@ -14,6 +14,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  const loadUnreadCount = async (userId: string) => {
+    const supabase = createClient()
+    
+    // Buscar lojas do usuário
+    const { data: stores } = await supabase
+      .from('stores')
+      .select('id')
+      .eq('user_id', userId)
+    
+    if (!stores || stores.length === 0) {
+      setUnreadCount(0)
+      return
+    }
+    
+    const storeIds = stores.map(s => s.id)
+    
+    // Contar alertas não lidos dessas lojas
+    const { count } = await supabase
+      .from('alerts')
+      .select('*', { count: 'exact', head: true })
+      .in('store_id', storeIds)
+      .eq('is_read', false)
+    
+    setUnreadCount(count || 0)
+  }
 
   useEffect(() => {
     const supabase = createClient()
@@ -25,20 +52,56 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         setUser(user)
         
         // Carregar perfil do usuário
-        const { data: profileData } = await supabase
+        const { data: profileData, error } = await supabase
           .from('user_profiles')
           .select('*')
           .eq('user_id', user.id)
           .single()
         
-        if (profileData) {
+        // Se perfil não existe, criar
+        if (error && error.code === 'PGRST116') {
+          const { data: newProfile } = await supabase
+            .from('user_profiles')
+            .insert({
+              user_id: user.id,
+              email: user.email || '',
+              full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+              email_notifications: true,
+              telegram_notifications: false,
+            })
+            .select()
+            .single()
+          
+          if (newProfile) {
+            setProfile(newProfile)
+          }
+        } else if (profileData) {
           setProfile(profileData)
         }
+        
+        // Carregar contagem de alertas não lidos
+        await loadUnreadCount(user.id)
         
         setLoading(false)
       }
     })
+    
+    // Atualizar contagem a cada 30 segundos
+    const interval = setInterval(() => {
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        if (user) loadUnreadCount(user.id)
+      })
+    }, 30000)
+    
+    return () => clearInterval(interval)
   }, [router])
+  
+  // Recarregar contagem quando a rota mudar (ex: após marcar alerta como lido)
+  useEffect(() => {
+    if (user) {
+      loadUnreadCount(user.id)
+    }
+  }, [pathname, user])
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -91,6 +154,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {navigation.map((item) => {
             const Icon = item.icon
             const isActive = pathname === item.href
+            const isAlerts = item.href === '/alerts'
+            const hasUnread = isAlerts && unreadCount > 0
+            
             return (
               <Link
                 key={item.name}
@@ -101,8 +167,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     : 'hover:bg-muted'
                 }`}
               >
-                <Icon className="h-5 w-5" />
-                {sidebarOpen && <span>{item.name}</span>}
+                <div className="relative">
+                  <Icon className="h-5 w-5" />
+                  {hasUnread && !sidebarOpen && (
+                    <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full" />
+                  )}
+                </div>
+                {sidebarOpen && (
+                  <div className="flex items-center justify-between flex-1">
+                    <span>{item.name}</span>
+                    {hasUnread && (
+                      <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </div>
+                )}
               </Link>
             )
           })}
@@ -113,10 +193,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {sidebarOpen && user && (
               <div className="text-sm">
                 <p className="font-medium truncate">
-                  {profile?.full_name || 'Usuário'}
+                  {profile?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário'}
                 </p>
                 <p className="text-xs text-muted-foreground truncate">
-                  {user.email}
+                  {user.email || 'Sem email'}
                 </p>
               </div>
             )}

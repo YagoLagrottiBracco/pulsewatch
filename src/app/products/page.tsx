@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Package, Search } from 'lucide-react'
+import { Package, Search, ExternalLink } from 'lucide-react'
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<any[]>([])
@@ -56,12 +56,15 @@ export default function ProductsPage() {
 
   const getStockBadge = (status: string) => {
     switch (status) {
+      case 'in_stock':
       case 'instock':
-        return <Badge className="bg-green-500">Em Estoque</Badge>
+        return <Badge className="bg-green-600 text-white hover:bg-green-700">Em Estoque</Badge>
+      case 'out_of_stock':
       case 'outofstock':
-        return <Badge variant="destructive">Esgotado</Badge>
+        return <Badge className="bg-red-600 text-white hover:bg-red-700">Esgotado</Badge>
+      case 'low_stock':
       case 'lowstock':
-        return <Badge className="bg-yellow-500">Estoque Baixo</Badge>
+        return <Badge className="bg-yellow-600 text-white hover:bg-yellow-700">Estoque Baixo</Badge>
       default:
         return <Badge variant="outline">{status}</Badge>
     }
@@ -138,14 +141,24 @@ export default function ProductsPage() {
             {filteredProducts.map((product) => (
               <Card key={product.id}>
                 <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg">{product.name}</CardTitle>
-                      <CardDescription>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle 
+                        className="text-lg truncate" 
+                        title={product.name}
+                      >
+                        {product.name}
+                      </CardTitle>
+                      <CardDescription className="truncate">
+                        {product.category && (
+                          <span className="text-primary font-medium">{product.category} • </span>
+                        )}
                         {product.stores?.name} • SKU: {product.sku || 'N/A'}
                       </CardDescription>
                     </div>
-                    {getStockBadge(product.stock_status)}
+                    <div className="flex-shrink-0">
+                      {getStockBadge(product.stock_status)}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -178,6 +191,20 @@ export default function ProductsPage() {
                       </p>
                     </div>
                   </div>
+                  
+                  {product.product_url && (
+                    <div className="mt-4 pt-4 border-t">
+                      <a
+                        href={product.product_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        Ver na Loja
+                      </a>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -197,20 +224,20 @@ export default function ProductsPage() {
                   <p className="text-sm text-muted-foreground">Total de Produtos</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-green-500">
-                    {products.filter((p) => p.stock_status === 'instock').length}
+                  <p className="text-2xl font-bold text-green-600">
+                    {products.filter((p) => p.stock_status === 'in_stock').length}
                   </p>
                   <p className="text-sm text-muted-foreground">Em Estoque</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-yellow-500">
-                    {products.filter((p) => p.stock_quantity > 0 && p.stock_quantity < 5).length}
+                  <p className="text-2xl font-bold text-yellow-600">
+                    {products.filter((p) => p.stock_quantity > 0 && p.stock_quantity <= 5).length}
                   </p>
                   <p className="text-sm text-muted-foreground">Estoque Baixo</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-red-500">
-                    {products.filter((p) => p.stock_status === 'outofstock').length}
+                  <p className="text-2xl font-bold text-red-600">
+                    {products.filter((p) => p.stock_status === 'out_of_stock').length}
                   </p>
                   <p className="text-sm text-muted-foreground">Esgotados</p>
                 </div>
