@@ -36,6 +36,9 @@ export default function LandingPage() {
             <a href="#pricing" className="text-sm font-medium hover:text-primary transition-colors">
               Preços
             </a>
+            <Link href="/blog" className="text-sm font-medium hover:text-primary transition-colors">
+              Blog
+            </Link>
             <Link href="/auth/login">
               <Button variant="ghost">Entrar</Button>
             </Link>
