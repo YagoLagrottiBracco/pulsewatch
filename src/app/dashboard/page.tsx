@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import DashboardLayout from '@/components/dashboard-layout'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -8,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Store, Package, AlertTriangle, TrendingUp } from 'lucide-react'
 
 export default function DashboardPage() {
+  const router = useRouter()
   const [stats, setStats] = useState({
     stores: 0,
     products: 0,
@@ -18,8 +20,31 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadDashboardData()
+    checkAdminAndLoadData()
   }, [])
+
+  const checkAdminAndLoadData = async () => {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return
+
+    // Check if user is admin
+    const { data: adminData } = await supabase
+      .from('admin_users')
+      .select('id')
+      .eq('user_id', user.id)
+      .single()
+
+    // Redirect admins to admin panel
+    if (adminData) {
+      router.push('/admin')
+      return
+    }
+
+    // Load normal dashboard data
+    loadDashboardData()
+  }
 
   const loadDashboardData = async () => {
     const supabase = createClient()

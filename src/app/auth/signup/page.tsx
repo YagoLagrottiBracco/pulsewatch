@@ -55,7 +55,19 @@ export default function SignupPage() {
           console.error('Erro ao criar perfil:', profileError)
         }
 
-        router.push('/dashboard')
+        // Check if user is admin
+        const { data: adminData } = await supabase
+          .from('admin_users')
+          .select('id')
+          .eq('user_id', data.user.id)
+          .single()
+
+        if (adminData) {
+          router.push('/admin')
+        } else {
+          router.push('/dashboard')
+        }
+        
         router.refresh()
       }
     } catch (error: any) {

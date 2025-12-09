@@ -24,14 +24,30 @@ export default function LoginPage() {
 
     try {
       const supabase = createClient()
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error, data } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
       if (error) throw error
 
-      router.push('/dashboard')
+      // Check if user is admin
+      if (data.user) {
+        const { data: adminData } = await supabase
+          .from('admin_users')
+          .select('id')
+          .eq('user_id', data.user.id)
+          .single()
+
+        if (adminData) {
+          router.push('/admin')
+        } else {
+          router.push('/dashboard')
+        }
+      } else {
+        router.push('/dashboard')
+      }
+      
       router.refresh()
     } catch (error: any) {
       setError(error.message || 'Erro ao fazer login')
