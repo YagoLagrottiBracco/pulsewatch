@@ -1,201 +1,71 @@
-'use client'
+import { Metadata } from 'next'
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import BlogPostClient from './BlogPostClient'
 
-import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Calendar, Eye, ArrowLeft, Share2, Bell } from 'lucide-react'
-
-export default function BlogPostPage() {
-  const params = useParams()
-  const router = useRouter()
-  const [post, setPost] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    loadPost()
-  }, [params.slug])
-
-  const loadPost = async () => {
-    try {
-      // Buscar por slug
-      const response = await fetch('/api/blog/posts')
-      const data = await response.json()
-      
-      // Garantir que a resposta seja um array
-      if (Array.isArray(data)) {
-        const foundPost = data.find((p: any) => p.slug === params.slug)
-        
-        if (foundPost) {
-          setPost(foundPost)
-        } else {
-          console.error('Post not found:', params.slug)
-          router.push('/blog')
-        }
-      } else {
-        console.error('API response is not an array:', data)
-        router.push('/blog')
-      }
-    } catch (error) {
-      console.error('Error loading post:', error)
-      router.push('/blog')
-    } finally {
-      setLoading(false)
-    }
+type Props = {
+  params: {
+    slug: string
   }
+}
 
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: post.title,
-        text: post.excerpt || post.title,
-        url: window.location.href,
-      })
-    } else {
-      navigator.clipboard.writeText(window.location.href)
-      alert('Link copiado para a área de transferência!')
-    }
-  }
+async function getPostBySlug(slug: string) {
+  const supabase = await createClient()
 
-  if (loading) {
-    return (
-      <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-muted/20">
-        <div className="container mx-auto px-4 py-12 max-w-4xl">
-          <div className="text-center">
-            <p className="text-muted-foreground">Carregando...</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  const { data } = await supabase
+    .from('blog_posts')
+    .select('*')
+    .eq('slug', slug)
+    .eq('status', 'published')
+    .single()
+
+  return data as any | null
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const post = await getPostBySlug(params.slug)
 
   if (!post) {
-    return null
+    return {
+      title: 'Post não encontrado | PulseWatch Blog',
+      description: 'O post que você tentou acessar não foi encontrado.',
+    }
   }
 
-  return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-muted/20">
-      {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4 max-w-6xl">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
-              <Bell className="h-6 w-6 text-primary" />
-              <span className="text-2xl font-bold">PulseWatch</span>
-            </Link>
-            <nav className="flex gap-6">
-              <Link href="/blog" className="text-sm font-medium text-primary">
-                Blog
-              </Link>
-              <Link href="/auth/login" className="text-sm hover:text-primary transition">
-                Login
-              </Link>
-            </nav>
-          </div>
-        </div>
-      </header>
+  const title = post.seo_title || post.title
+  const description = post.seo_description || post.excerpt || ''
+  const ogImage = post.seo_og_image || post.cover_image || undefined
+  const keywords = post.seo_keywords
+    ? (post.seo_keywords as string)
+        .split(',')
+        .map((k) => k.trim())
+        .filter(Boolean)
+    : undefined
+  const url = `https://pulsewatch.click/blog/${post.slug}`
 
-      {/* Article */}
-      <article className="py-12">
-        <div className="container mx-auto px-4 max-w-4xl">
-          {/* Back Button */}
-          <Button
-            variant="ghost"
-            onClick={() => router.push('/blog')}
-            className="mb-6"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar para o Blog
-          </Button>
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url,
+      type: 'article',
+      images: ogImage ? [{ url: ogImage }] : undefined,
+    },
+    keywords,
+    alternates: {
+      canonical: url,
+    },
+  }
+}
 
-          {/* Cover Image */}
-          {post.cover_image && (
-            <div className="aspect-video w-full overflow-hidden rounded-xl mb-8">
-              <img
-                src={post.cover_image}
-                alt={post.title}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          )}
+export default async function BlogPostPage({ params }: Props) {
+  const post = await getPostBySlug(params.slug)
 
-          {/* Tags */}
-          {post.tags && post.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {post.tags.map((tag: string) => (
-                <Badge key={tag} variant="secondary">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          )}
+  if (!post) {
+    redirect('/blog')
+  }
 
-          {/* Title */}
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">{post.title}</h1>
-
-          {/* Meta */}
-          <div className="flex items-center gap-4 mb-8 text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              <span className="text-sm">
-                {new Date(post.published_at).toLocaleDateString('pt-BR', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric'
-                })}
-              </span>
-            </div>
-            <span>•</span>
-            <div className="flex items-center gap-2">
-              <Eye className="h-4 w-4" />
-              <span className="text-sm">{post.views || 0} visualizações</span>
-            </div>
-            <span>•</span>
-            <Button variant="ghost" size="sm" onClick={handleShare}>
-              <Share2 className="h-4 w-4 mr-2" />
-              Compartilhar
-            </Button>
-          </div>
-
-          {/* Excerpt */}
-          {post.excerpt && (
-            <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
-              {post.excerpt}
-            </p>
-          )}
-
-          {/* Divider */}
-          <div className="border-t mb-8" />
-
-          {/* Content */}
-          <div
-            className="prose prose-lg prose-slate dark:prose-invert max-w-none"
-            dangerouslySetInnerHTML={{ __html: post.content }}
-          />
-
-          {/* Divider */}
-          <div className="border-t mt-12 pt-8">
-            <div className="flex items-center justify-between">
-              <Button variant="outline" onClick={() => router.push('/blog')}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Voltar para o Blog
-              </Button>
-              <Button onClick={handleShare}>
-                <Share2 className="h-4 w-4 mr-2" />
-                Compartilhar
-              </Button>
-            </div>
-          </div>
-        </div>
-      </article>
-
-      {/* Footer */}
-      <footer className="mt-auto border-t py-8 bg-background">
-        <div className="container mx-auto px-4 max-w-6xl text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} PulseWatch. Todos os direitos reservados.</p>
-        </div>
-      </footer>
-    </div>
-  )
+  return <BlogPostClient post={post} />
 }

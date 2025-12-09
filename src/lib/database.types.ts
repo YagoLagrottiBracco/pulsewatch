@@ -269,6 +269,65 @@ export interface Database {
           created_at?: string
         }
       }
+      blog_posts: {
+        Row: {
+          id: string
+          title: string
+          slug: string
+          excerpt: string | null
+          content: string
+          cover_image: string | null
+          author_id: string | null
+          status: 'draft' | 'published' | 'archived'
+          published_at: string | null
+          created_at: string
+          updated_at: string
+          views: number | null
+          tags: string[] | null
+          seo_title: string | null
+          seo_description: string | null
+          seo_og_image: string | null
+          seo_keywords: string | null
+        }
+        Insert: {
+          id?: string
+          title: string
+          slug: string
+          excerpt?: string | null
+          content: string
+          cover_image?: string | null
+          author_id?: string | null
+          status?: 'draft' | 'published' | 'archived'
+          published_at?: string | null
+          created_at?: string
+          updated_at?: string
+          views?: number | null
+          tags?: string[] | null
+          seo_title?: string | null
+          seo_description?: string | null
+          seo_og_image?: string | null
+          seo_keywords?: string | null
+        }
+        Update: {
+          id?: string
+          title?: string
+          slug?: string
+          excerpt?: string | null
+          content?: string
+          cover_image?: string | null
+          author_id?: string | null
+          status?: 'draft' | 'published' | 'archived'
+          published_at?: string | null
+          created_at?: string
+          updated_at?: string
+          views?: number | null
+          tags?: string[] | null
+          seo_title?: string | null
+          seo_description?: string | null
+          seo_og_image?: string | null
+          seo_keywords?: string | null
+        }
+      }
     }
     Views: {
       [_ in never]: never

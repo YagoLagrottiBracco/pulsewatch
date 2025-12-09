@@ -28,6 +28,10 @@ export default function BlogEditPage() {
     cover_image: '',
     status: 'draft',
     tags: [] as string[],
+    seo_title: '',
+    seo_description: '',
+    seo_og_image: '',
+    seo_keywords: '',
   })
 
   useEffect(() => {
@@ -74,6 +78,10 @@ export default function BlogEditPage() {
         cover_image: data.cover_image || '',
         status: data.status,
         tags: data.tags || [],
+        seo_title: data.seo_title || '',
+        seo_description: data.seo_description || '',
+        seo_og_image: data.seo_og_image || '',
+        seo_keywords: data.seo_keywords || '',
       })
     } catch (error) {
       console.error('Error loading post:', error)
@@ -241,6 +249,55 @@ export default function BlogEditPage() {
               })}
               placeholder="react, typescript, tutorial"
             />
+          </div>
+
+          {/* SEO */}
+          <div className="space-y-4 border-t pt-4">
+            <h3 className="text-sm font-medium text-muted-foreground">SEO</h3>
+
+            <div className="space-y-2">
+              <Label htmlFor="seo_title">SEO Title</Label>
+              <Input
+                id="seo_title"
+                value={formData.seo_title}
+                onChange={(e) => setFormData({ ...formData, seo_title: e.target.value })}
+                placeholder="Título otimizado para SEO (opcional)"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="seo_description">SEO Description</Label>
+              <Textarea
+                id="seo_description"
+                value={formData.seo_description}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setFormData({ ...formData, seo_description: e.target.value })
+                }
+                placeholder="Descrição que aparecerá nos resultados de busca (opcional)"
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="seo_og_image">SEO OG Image URL</Label>
+              <Input
+                id="seo_og_image"
+                type="url"
+                value={formData.seo_og_image}
+                onChange={(e) => setFormData({ ...formData, seo_og_image: e.target.value })}
+                placeholder="https://exemplo.com/imagem-og.jpg (opcional, fallback para capa)"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="seo_keywords">SEO Keywords</Label>
+              <Input
+                id="seo_keywords"
+                value={formData.seo_keywords}
+                onChange={(e) => setFormData({ ...formData, seo_keywords: e.target.value })}
+                placeholder="monitoramento, ecommerce, uptime (separadas por vírgula)"
+              />
+            </div>
           </div>
 
           {/* Actions */}

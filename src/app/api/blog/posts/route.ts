@@ -73,7 +73,19 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, slug, excerpt, content, cover_image, status, tags } = body
+    const {
+      title,
+      slug,
+      excerpt,
+      content,
+      cover_image,
+      status,
+      tags,
+      seo_title,
+      seo_description,
+      seo_og_image,
+      seo_keywords,
+    } = body
 
     // Create post
     const { data, error } = await supabase
@@ -88,6 +100,10 @@ export async function POST(request: NextRequest) {
         status: status || 'draft',
         tags: tags || [],
         published_at: status === 'published' ? new Date().toISOString() : null,
+        seo_title,
+        seo_description,
+        seo_og_image,
+        seo_keywords,
       })
       .select()
       .single()

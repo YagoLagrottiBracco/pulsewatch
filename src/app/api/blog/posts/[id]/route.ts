@@ -59,7 +59,19 @@ export async function PUT(
 
     const { id } = params
     const body = await request.json()
-    const { title, slug, excerpt, content, cover_image, status, tags } = body
+    const {
+      title,
+      slug,
+      excerpt,
+      content,
+      cover_image,
+      status,
+      tags,
+      seo_title,
+      seo_description,
+      seo_og_image,
+      seo_keywords,
+    } = body
 
     const updateData: any = {
       title,
@@ -69,6 +81,10 @@ export async function PUT(
       cover_image,
       status,
       tags: tags || [],
+      seo_title,
+      seo_description,
+      seo_og_image,
+      seo_keywords,
     }
 
     // Set published_at if publishing for first time
