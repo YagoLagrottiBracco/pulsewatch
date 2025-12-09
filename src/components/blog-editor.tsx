@@ -31,7 +31,7 @@ export default function BlogEditor({ content, onChange, placeholder }: BlogEdito
       }),
     ],
     content,
-    onUpdate: ({ editor }) => {
+    onUpdate: ({ editor }: { editor: any }) => {
       onChange(editor.getHTML())
     },
     editorProps: {

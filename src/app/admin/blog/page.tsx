@@ -47,9 +47,17 @@ export default function AdminBlogPage() {
     try {
       const response = await fetch('/api/blog/posts?status=all')
       const data = await response.json()
-      setPosts(data)
+      
+      // Garantir que posts seja sempre um array
+      if (Array.isArray(data)) {
+        setPosts(data)
+      } else {
+        console.error('API response is not an array:', data)
+        setPosts([])
+      }
     } catch (error) {
       console.error('Error loading posts:', error)
+      setPosts([])
     } finally {
       setLoading(false)
     }

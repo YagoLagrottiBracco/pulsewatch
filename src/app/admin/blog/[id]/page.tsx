@@ -193,7 +193,7 @@ export default function BlogEditPage() {
             <Textarea
               id="excerpt"
               value={formData.excerpt}
-              onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, excerpt: e.target.value })}
               placeholder="Breve descrição do post (aparece na listagem)"
               rows={3}
             />

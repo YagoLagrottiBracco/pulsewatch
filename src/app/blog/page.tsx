@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Calendar, Eye, ArrowRight } from 'lucide-react'
+import { Calendar, Eye, ArrowRight, Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export default function BlogPage() {
@@ -19,9 +19,17 @@ export default function BlogPage() {
     try {
       const response = await fetch('/api/blog/posts')
       const data = await response.json()
-      setPosts(data)
+      
+      // Garantir que posts seja sempre um array
+      if (Array.isArray(data)) {
+        setPosts(data)
+      } else {
+        console.error('API response is not an array:', data)
+        setPosts([])
+      }
     } catch (error) {
       console.error('Error loading posts:', error)
+      setPosts([])
     } finally {
       setLoading(false)
     }
@@ -29,7 +37,7 @@ export default function BlogPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-muted/20">
         <div className="container mx-auto px-4 py-12 max-w-6xl">
           <div className="text-center">
             <p className="text-muted-foreground">Carregando posts...</p>
@@ -40,18 +48,16 @@ export default function BlogPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+    <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-muted/20">
       {/* Header */}
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 max-w-6xl">
           <div className="flex items-center justify-between">
-            <Link href="/" className="text-2xl font-bold">
-              PulseWatch
+            <Link href="/" className="flex items-center gap-2">
+              <Bell className="h-6 w-6 text-primary" />
+              <span className="text-2xl font-bold">PulseWatch</span>
             </Link>
             <nav className="flex gap-6">
-              <Link href="/" className="text-sm hover:text-primary transition">
-                Home
-              </Link>
               <Link href="/blog" className="text-sm font-medium text-primary">
                 Blog
               </Link>
@@ -136,9 +142,9 @@ export default function BlogPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t py-8 bg-background">
+      <footer className="mt-auto border-t py-8 bg-background">
         <div className="container mx-auto px-4 max-w-6xl text-center text-sm text-muted-foreground">
-          <p>&copy; 2024 PulseWatch. Todos os direitos reservados.</p>
+          <p>&copy; {new Date().getFullYear()} PulseWatch. Todos os direitos reservados.</p>
         </div>
       </footer>
     </div>

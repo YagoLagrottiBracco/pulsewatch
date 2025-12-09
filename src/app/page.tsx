@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
 import { 
   Bell, 
   ShoppingCart, 
@@ -212,6 +213,237 @@ export default function LandingPage() {
                   Seja notificado instantaneamente sobre qualquer problema
                 </p>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Pricing Section */}
+        <section id="pricing" className="container py-24 bg-muted/50">
+          <div className="mx-auto max-w-5xl">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">
+                Planos e Preços
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-4">
+                Escolha o plano ideal para o seu negócio
+              </p>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-500/10 text-green-700 dark:text-green-400 rounded-full">
+                <CheckCircle className="h-4 w-4" />
+                <span className="text-sm font-medium">
+                  Todos os planos incluem 7 dias de teste grátis
+                </span>
+              </div>
+            </div>
+
+            <div className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto">
+              {/* Free Plan */}
+              <Card className="relative">
+                <CardHeader>
+                  <CardTitle className="text-2xl">Teste Gratuito</CardTitle>
+                  <CardDescription>
+                    Experimente todas as funcionalidades básicas
+                  </CardDescription>
+                  <div className="mt-4">
+                    <span className="text-4xl font-bold">R$ 0</span>
+                    <span className="text-muted-foreground">/7 dias</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    💳 Sem cartão de crédito necessário
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="bg-muted rounded-lg p-3 mb-4">
+                    <p className="text-xs text-muted-foreground">
+                      Teste perfeito para conhecer o PulseWatch e validar se atende suas necessidades
+                    </p>
+                  </div>
+
+                  <ul className="space-y-3">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-medium">1 loja monitorada</span>
+                        <p className="text-xs text-muted-foreground">Ideal para começar</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-medium">Verificação a cada 10 min</span>
+                        <p className="text-xs text-muted-foreground">Monitoramento constante</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-medium">Alertas via email</span>
+                        <p className="text-xs text-muted-foreground">Notificações instantâneas</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-medium">Monitoramento de estoque</span>
+                        <p className="text-xs text-muted-foreground">Alertas de produtos esgotados</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-medium">Dashboard básico</span>
+                        <p className="text-xs text-muted-foreground">Visão geral da sua loja</p>
+                      </div>
+                    </li>
+                  </ul>
+
+                  <div className="pt-2 border-t">
+                    <Link href="/auth/signup" className="w-full block">
+                      <Button variant="outline" className="w-full" size="lg">
+                        Começar Teste Grátis
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Premium Plan */}
+              <Card className="relative border-primary shadow-lg">
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                  <Badge className="bg-primary text-primary-foreground px-4 py-1">
+                    Mais Popular
+                  </Badge>
+                </div>
+                <CardHeader>
+                  <CardTitle className="text-2xl">Premium</CardTitle>
+                  <CardDescription>
+                    Para lojistas que levam seu negócio a sério
+                  </CardDescription>
+                  <div className="mt-4">
+                    <span className="text-4xl font-bold">R$ 29,99</span>
+                    <span className="text-muted-foreground">/mês</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    🎉 Cancele quando quiser, sem multas
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 mb-4">
+                    <p className="text-sm font-medium text-primary mb-1">
+                      ⚡ O que torna o Premium especial:
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Monitore todas as suas lojas, receba alertas 2x mais rápidos e tenha controle total sobre seu negócio
+                    </p>
+                  </div>
+                  
+                  <ul className="space-y-3">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-medium">Lojas ilimitadas</span>
+                        <p className="text-xs text-muted-foreground">Monitore quantas lojas quiser</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-medium">Verificação a cada 5 min</span>
+                        <p className="text-xs text-muted-foreground">Detecção 2x mais rápida de problemas</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-medium">Email + Telegram</span>
+                        <p className="text-xs text-muted-foreground">Alertas instantâneos onde você estiver</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-medium">Histórico completo</span>
+                        <p className="text-xs text-muted-foreground">Análise de todos os eventos passados</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-medium">Dashboard avançado</span>
+                        <p className="text-xs text-muted-foreground">Métricas e insights detalhados</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-medium">Suporte prioritário</span>
+                        <p className="text-xs text-muted-foreground">Resposta em até 24h</p>
+                      </div>
+                    </li>
+                  </ul>
+
+                  <div className="pt-2 border-t">
+                    <p className="text-xs text-center text-muted-foreground mb-3">
+                      ✨ Experimente grátis por 7 dias, sem compromisso
+                    </p>
+                    <Link href="/auth/signup" className="w-full block">
+                      <Button className="w-full" size="lg">
+                        Começar Teste Grátis
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <p className="text-center text-sm text-muted-foreground mt-8">
+              💳 Pagamento seguro via Stripe • ❌ Cancele quando quiser • 🔒 Dados protegidos
+            </p>
+
+            {/* Trial Info */}
+            <div className="mt-12 max-w-3xl mx-auto">
+              <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+                <CardContent className="p-6">
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-semibold mb-2">
+                      🎁 Como funciona o teste grátis de 7 dias?
+                    </h3>
+                  </div>
+                  <div className="grid md:grid-cols-3 gap-4 text-sm">
+                    <div className="text-center">
+                      <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="text-2xl">1️⃣</span>
+                      </div>
+                      <p className="font-medium mb-1">Cadastre-se grátis</p>
+                      <p className="text-xs text-muted-foreground">
+                        Sem precisar de cartão de crédito
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="text-2xl">2️⃣</span>
+                      </div>
+                      <p className="font-medium mb-1">Use por 7 dias</p>
+                      <p className="text-xs text-muted-foreground">
+                        Acesso total a todas as funcionalidades
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="text-2xl">3️⃣</span>
+                      </div>
+                      <p className="font-medium mb-1">Decida se vale a pena</p>
+                      <p className="text-xs text-muted-foreground">
+                        Escolha seu plano ou cancele sem custo
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 p-3 bg-background/50 rounded-lg">
+                    <p className="text-xs text-center text-muted-foreground">
+                      ✨ <strong>Garantia:</strong> Após os 7 dias, você escolhe se quer continuar com o plano Free ou fazer upgrade para o Premium. Sem cobranças surpresa!
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </section>

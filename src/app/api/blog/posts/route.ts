@@ -41,9 +41,13 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error
 
-    return NextResponse.json(data)
+    // Garantir que sempre retorne um array
+    return NextResponse.json(data || [])
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('Error fetching posts:', error)
+    // Em caso de erro, retornar array vazio ao invés de objeto de erro
+    // Isso evita quebrar o frontend
+    return NextResponse.json([], { status: 500 })
   }
 }
 
