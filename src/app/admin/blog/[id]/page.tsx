@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
 import BlogEditor from '@/components/blog-editor'
 import { Save, ArrowLeft } from 'lucide-react'
 
@@ -32,6 +33,7 @@ export default function BlogEditPage() {
     seo_description: '',
     seo_og_image: '',
     seo_keywords: '',
+    is_page: false,
   })
 
   useEffect(() => {
@@ -82,6 +84,7 @@ export default function BlogEditPage() {
         seo_description: data.seo_description || '',
         seo_og_image: data.seo_og_image || '',
         seo_keywords: data.seo_keywords || '',
+        is_page: !!data.is_page,
       })
     } catch (error) {
       console.error('Error loading post:', error)
@@ -191,7 +194,8 @@ export default function BlogEditPage() {
               required
             />
             <p className="text-xs text-muted-foreground">
-              URL: /blog/{formData.slug || 'slug-do-post'}
+              URL: {formData.is_page ? '/' : '/blog/'}
+              {formData.slug || 'slug-do-conteudo'}
             </p>
           </div>
 
@@ -232,6 +236,20 @@ export default function BlogEditPage() {
             <BlogEditor
               content={formData.content}
               onChange={(content) => setFormData({ ...formData, content })}
+            />
+          </div>
+
+          <div className="flex items-center justify-between border rounded-lg p-4">
+            <div className="space-y-1">
+              <Label htmlFor="is_page">Transformar em Página CTA</Label>
+              <p className="text-xs text-muted-foreground">
+                Ative para publicar este conteúdo em <code>/{formData.slug || 'meu-cta'}</code> e usar em CTAs da landing page.
+              </p>
+            </div>
+            <Switch
+              id="is_page"
+              checked={formData.is_page}
+              onCheckedChange={(value: boolean) => setFormData({ ...formData, is_page: value })}
             />
           </div>
 
