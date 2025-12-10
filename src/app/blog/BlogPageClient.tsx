@@ -1,103 +1,21 @@
 'use client'
 
-import { Metadata } from 'next'
-import { createClient } from '@/lib/supabase/server'
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Calendar, Eye, ArrowRight, Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-const BLOG_TITLE = 'Blog PulseWatch – Monitoramento inteligente para e-commerce'
-const BLOG_DESCRIPTION =
-  'Alertas inteligentes, tutoriais e guias práticos para manter sua loja virtual vendendo 24/7.'
-
-async function getPublishedPosts() {
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('blog_posts')
-    .select('*')
-    .eq('status', 'published')
-    .order('published_at', { ascending: false })
-
-  return data || []
+interface BlogPageClientProps {
+  initialPosts: any[]
 }
 
-export const dynamic = 'force-dynamic'
-
-export async function generateMetadata(): Promise<Metadata> {
-  const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'https://pulsewatch.click'
-
-  const canonicalUrl = `${appUrl}/blog`
-
-  return {
-    title: BLOG_TITLE,
-    description: BLOG_DESCRIPTION,
-    alternates: {
-      canonical: canonicalUrl,
-    },
-    openGraph: {
-      type: 'website',
-      url: canonicalUrl,
-      title: BLOG_TITLE,
-      description: BLOG_DESCRIPTION,
-      siteName: 'PulseWatch',
-      images: [
-        {
-          url: `${appUrl}/og-image.png`,
-          width: 1200,
-          height: 630,
-          alt: BLOG_TITLE,
-        },
-      ],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: BLOG_TITLE,
-      description: BLOG_DESCRIPTION,
-      images: [`${appUrl}/og-image.png`],
-      site: '@pulsewatch',
-    },
-  }
-}
-
-export default async function BlogPage() {
-  const [posts, setPosts] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    loadPosts()
-  }, [])
-
-  const loadPosts = async () => {
-    try {
-      const data = await getPublishedPosts()
-      setPosts(data)
-    } catch (error) {
-      console.error('Error loading posts:', error)
-      setPosts([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-muted/20">
-        <div className="container mx-auto px-4 py-12 max-w-6xl">
-          <div className="text-center">
-            <p className="text-muted-foreground">Carregando posts...</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
+export default function BlogPageClient({ initialPosts }: BlogPageClientProps) {
+  const posts = useMemo(() => initialPosts || [], [initialPosts])
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-muted/20">
-      {/* Header */}
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 max-w-6xl">
           <div className="flex items-center justify-between">
@@ -117,7 +35,6 @@ export default async function BlogPage() {
         </div>
       </header>
 
-      {/* Hero */}
       <section className="py-20 text-center">
         <div className="container mx-auto px-4 max-w-4xl">
           <h1 className="text-5xl font-bold mb-6">
@@ -129,9 +46,23 @@ export default async function BlogPage() {
         </div>
       </section>
 
-      {/* Posts Grid */}
-      <section className="pb-20">
+      <section className="pb-16">
         <div className="container mx-auto px-4 max-w-6xl">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h2 className="text-3xl font-bold">Últimos artigos</h2>
+              <p className="text-muted-foreground">
+                Conteúdo prático para manter sua loja no ar 24/7
+              </p>
+            </div>
+            <Button asChild variant="outline">
+              <Link href="/auth/signup">
+                Criar conta
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Link>
+            </Button>
+          </div>
+
           {posts.length === 0 ? (
             <Card>
               <CardContent className="text-center py-12">
@@ -161,26 +92,28 @@ export default async function BlogPage() {
                           </Badge>
                         ))}
                       </div>
-                      <CardTitle className="line-clamp-2">{post.title}</CardTitle>
+                      <CardTitle>{post.title}</CardTitle>
                       <CardDescription className="line-clamp-3">
-                        {post.excerpt || 'Leia mais...'}
+                        {post.excerpt || 'Sem resumo disponível'}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
+                      <div className="flex items-center justify-between text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4" />
-                          {new Date(post.published_at).toLocaleDateString('pt-BR')}
+                          {post.published_at
+                            ? new Date(post.published_at).toLocaleDateString('pt-BR', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                              })
+                            : 'Sem data'}
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-2">
                           <Eye className="h-4 w-4" />
-                          {post.views || 0}
+                          {post.views || 0} views
                         </div>
                       </div>
-                      <Button variant="link" className="mt-4 p-0">
-                        Ler mais
-                        <ArrowRight className="h-4 w-4 ml-1" />
-                      </Button>
                     </CardContent>
                   </Card>
                 </Link>
@@ -190,7 +123,6 @@ export default async function BlogPage() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="mt-auto border-t py-8 bg-background">
         <div className="container mx-auto px-4 max-w-6xl text-center text-sm text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} PulseWatch. Todos os direitos reservados.</p>
