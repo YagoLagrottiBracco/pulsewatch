@@ -1,12 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Edit, Trash2, Eye } from 'lucide-react'
+import { Plus, Edit, Trash2, Eye, ExternalLink } from 'lucide-react'
 
 export default function AdminBlogPage() {
   const router = useRouter()
@@ -136,6 +137,19 @@ export default function AdminBlogPage() {
                     <CardDescription>{post.excerpt || 'Sem descrição'}</CardDescription>
                   </div>
                   <div className="flex gap-2">
+                    {post.status === 'published' && post.slug && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        asChild
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      >
+                        <Link href={`/blog/${post.slug}`} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-4 w-4 mr-1" />
+                          Visualizar
+                        </Link>
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"

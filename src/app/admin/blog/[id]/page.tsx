@@ -243,10 +243,15 @@ export default function BlogEditPage() {
             <Input
               id="tags"
               value={formData.tags.join(', ')}
-              onChange={(e) => setFormData({
-                ...formData,
-                tags: e.target.value.split(',').map(t => t.trim()).filter(Boolean)
-              })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  tags: e.target.value
+                    .split(/[,.]/)
+                    .map((t) => t.trim())
+                    .filter(Boolean),
+                })
+              }
               placeholder="react, typescript, tutorial"
             />
           </div>

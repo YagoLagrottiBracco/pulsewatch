@@ -7,14 +7,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { AlertTriangle, CheckCircle, Mail, MessageSquare, Trash2 } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 
 export default function AlertsPage() {
   const [alerts, setAlerts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all')
+  const [stockConfig, setStockConfig] = useState({
+    lowStockThreshold: 5,
+    enableLowStock: true,
+    enableOutOfStock: true,
+    enableBackInStock: true,
+  })
+  const [currentRuleId, setCurrentRuleId] = useState<string | null>(null)
+  const [loadingConfig, setLoadingConfig] = useState(true)
+  const [savingConfig, setSavingConfig] = useState(false)
 
   useEffect(() => {
     loadAlerts()
+    loadAlertRules()
   }, [])
 
   const loadAlerts = async () => {
@@ -30,6 +43,116 @@ export default function AlertsPage() {
 
     setAlerts(data || [])
     setLoading(false)
+  }
+
+  const loadAlertRules = async () => {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      setLoadingConfig(false)
+      return
+    }
+
+    const { data, error } = await supabase
+      .from('alert_rules')
+      .select('id, store_id, type, condition, is_active')
+      .eq('user_id', user.id)
+      .eq('type', 'STOCK_LEVEL')
+      .eq('is_active', true)
+
+    if (error) {
+      console.error('Erro ao carregar regras de alertas:', error)
+      setLoadingConfig(false)
+      return
+    }
+
+    if (!data || data.length === 0) {
+      setLoadingConfig(false)
+      return
+    }
+
+    const rule = data.find((r: any) => !r.store_id) || data[0]
+
+    if (rule && rule.condition) {
+      const condition: any = rule.condition
+
+      setStockConfig({
+        lowStockThreshold:
+          typeof condition.lowStockThreshold === 'number' && condition.lowStockThreshold > 0
+            ? condition.lowStockThreshold
+            : 5,
+        enableLowStock:
+          typeof condition.enableLowStock === 'boolean'
+            ? condition.enableLowStock
+            : true,
+        enableOutOfStock:
+          typeof condition.enableOutOfStock === 'boolean'
+            ? condition.enableOutOfStock
+            : true,
+        enableBackInStock:
+          typeof condition.enableBackInStock === 'boolean'
+            ? condition.enableBackInStock
+            : true,
+      })
+
+      setCurrentRuleId(rule.id)
+    }
+
+    setLoadingConfig(false)
+  }
+
+  const saveStockConfig = async () => {
+    setSavingConfig(true)
+
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        setSavingConfig(false)
+        return
+      }
+
+      const condition = {
+        lowStockThreshold: Number(stockConfig.lowStockThreshold) || 1,
+        enableLowStock: stockConfig.enableLowStock,
+        enableOutOfStock: stockConfig.enableOutOfStock,
+        enableBackInStock: stockConfig.enableBackInStock,
+      }
+
+      if (currentRuleId) {
+        const { error } = await supabase
+          .from('alert_rules')
+          .update({ condition })
+          .eq('id', currentRuleId)
+
+        if (error) {
+          console.error('Erro ao salvar regra de alertas:', error)
+        }
+      } else {
+        const { data, error } = await supabase
+          .from('alert_rules')
+          .insert({
+            user_id: user.id,
+            store_id: null,
+            name: 'Regra global de estoque',
+            type: 'STOCK_LEVEL',
+            condition,
+            is_active: true,
+          })
+          .select('id')
+          .single()
+
+        if (error) {
+          console.error('Erro ao criar regra de alertas:', error)
+        } else if (data) {
+          setCurrentRuleId(data.id)
+        }
+      }
+    } finally {
+      setSavingConfig(false)
+    }
   }
 
   const markAsRead = async (id: string) => {
@@ -125,6 +248,99 @@ export default function AlertsPage() {
             </Button>
           )}
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Regras de Estoque</CardTitle>
+            <CardDescription>
+              Configure quando o PulseWatch deve disparar alertas de estoque para suas lojas.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingConfig ? (
+              <p className="text-sm text-muted-foreground">Carregando regras...</p>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="lowStockThreshold">Estoque baixo abaixo de</Label>
+                    <Input
+                      id="lowStockThreshold"
+                      type="number"
+                      min={1}
+                      value={stockConfig.lowStockThreshold}
+                      onChange={(e) =>
+                        setStockConfig({
+                          ...stockConfig,
+                          lowStockThreshold: Number(e.target.value) || 1,
+                        })
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Quando o estoque for menor ou igual a esse valor, será considerado baixo.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label htmlFor="enableLowStock">Alerta de Estoque Baixo</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Notificar quando o estoque ficar abaixo do limite.
+                      </p>
+                    </div>
+                    <Switch
+                      id="enableLowStock"
+                      checked={stockConfig.enableLowStock}
+                      onCheckedChange={(value: boolean) =>
+                        setStockConfig({ ...stockConfig, enableLowStock: value })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label htmlFor="enableOutOfStock">Alerta de Estoque Zerado</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Notificar quando o produto ficar sem estoque.
+                      </p>
+                    </div>
+                    <Switch
+                      id="enableOutOfStock"
+                      checked={stockConfig.enableOutOfStock}
+                      onCheckedChange={(value: boolean) =>
+                        setStockConfig({ ...stockConfig, enableOutOfStock: value })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label htmlFor="enableBackInStock">Alerta de Volta ao Estoque</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Notificar quando um produto voltar a ter estoque.
+                      </p>
+                    </div>
+                    <Switch
+                      id="enableBackInStock"
+                      checked={stockConfig.enableBackInStock}
+                      onCheckedChange={(value: boolean) =>
+                        setStockConfig({ ...stockConfig, enableBackInStock: value })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button onClick={saveStockConfig} disabled={savingConfig}>
+                    {savingConfig ? 'Salvando...' : 'Salvar regras de estoque'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Filter Tabs */}
         <div className="flex gap-2">

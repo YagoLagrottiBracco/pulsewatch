@@ -23,39 +23,91 @@ async function getPostBySlug(slug: string) {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'https://pulsewatch.click'
+  const metadataBase = new URL(appUrl)
   const post = await getPostBySlug(params.slug)
 
   if (!post) {
+    const fallbackTitle = 'Post não encontrado | PulseWatch Blog'
+    const fallbackDescription = 'O post que você tentou acessar não foi encontrado.'
     return {
-      title: 'Post não encontrado | PulseWatch Blog',
-      description: 'O post que você tentou acessar não foi encontrado.',
+      metadataBase,
+      title: fallbackTitle,
+      description: fallbackDescription,
+      openGraph: {
+        title: fallbackTitle,
+        description: fallbackDescription,
+        url: `${appUrl}/blog`,
+        siteName: 'PulseWatch',
+        type: 'article',
+      },
+      alternates: {
+        canonical: `${appUrl}/blog`,
+      },
+      robots: {
+        index: false,
+        follow: false,
+      },
     }
   }
 
   const title = post.seo_title || post.title
-  const description = post.seo_description || post.excerpt || ''
-  const ogImage = post.seo_og_image || post.cover_image || undefined
-  const keywords = post.seo_keywords
+  const description = post.seo_description || post.excerpt || post.title
+  const rawOgImage = post.seo_og_image || post.cover_image || null
+  const ogImage = rawOgImage
+    ? rawOgImage.startsWith('http')
+      ? rawOgImage
+      : `${appUrl}/${rawOgImage.replace(/^\/+/, '')}`
+    : undefined
+
+  const keywordsArray = post.seo_keywords
     ? (post.seo_keywords as string)
         .split(',')
         .map((k) => k.trim())
         .filter(Boolean)
     : undefined
-  const url = `https://pulsewatch.click/blog/${post.slug}`
+
+  const canonicalUrl = `${appUrl}/blog/${post.slug}`
 
   return {
+    metadataBase,
     title,
     description,
+    keywords: keywordsArray,
+    alternates: {
+      canonical: canonicalUrl,
+    },
     openGraph: {
       title,
       description,
-      url,
+      url: canonicalUrl,
+      siteName: 'PulseWatch',
       type: 'article',
-      images: ogImage ? [{ url: ogImage }] : undefined,
+      publishedTime: post.published_at || undefined,
+      modifiedTime: post.updated_at || undefined,
+      tags: Array.isArray(post.tags) ? post.tags : undefined,
+      images: ogImage
+        ? [
+            {
+              url: ogImage,
+              width: 1200,
+              height: 630,
+              alt: title,
+            },
+          ]
+        : undefined,
     },
-    keywords,
-    alternates: {
-      canonical: url,
+    twitter: {
+      card: ogImage ? 'summary_large_image' : 'summary',
+      title,
+      description,
+      images: ogImage ? [ogImage] : undefined,
+      site: '@pulsewatch',
+    },
+    robots: {
+      index: true,
+      follow: true,
     },
   }
 }

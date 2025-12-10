@@ -96,11 +96,12 @@ export default function BlogPage() {
                 <Link key={post.id} href={`/blog/${post.slug}`}>
                   <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">
                     {post.cover_image && (
-                      <div className="aspect-video w-full overflow-hidden rounded-t-lg">
+                      <div className="w-full rounded-t-lg bg-muted flex justify-center">
                         <img
                           src={post.cover_image}
                           alt={post.title}
-                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                          className="max-w-full h-auto rounded-t-lg"
+                          loading="lazy"
                         />
                       </div>
                     )}

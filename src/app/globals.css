@@ -108,6 +108,12 @@
   @apply mb-2;
 }
 
+.prose ul li p,
+.prose ol li p {
+  display: inline;
+  margin: 0;
+}
+
 .prose blockquote {
   @apply border-l-4 border-primary pl-4 italic my-4;
 }

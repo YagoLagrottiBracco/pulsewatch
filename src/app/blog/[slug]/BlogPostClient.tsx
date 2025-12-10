@@ -69,11 +69,11 @@ export default function BlogPostClient({ post }: BlogPostClientProps) {
 
           {/* Cover Image */}
           {post.cover_image && (
-            <div className="aspect-video w-full overflow-hidden rounded-xl mb-8">
+            <div className="w-full flex justify-center mb-8">
               <img
                 src={post.cover_image}
                 alt={post.title}
-                className="w-full h-full object-cover"
+                className="rounded-xl max-w-full h-auto"
               />
             </div>
           )}

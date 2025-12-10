@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { sendNotifications } from '@/services/notification'
+import { NuvemshopClient } from '@/integrations/nuvemshop'
+import { TrayClient } from '@/integrations/tray'
+import { VtexClient } from '@/integrations/vtex'
 
 // Esta rota é chamada pelo Vercel Cron a cada 10 minutos
 export async function GET(request: NextRequest) {
@@ -77,12 +80,24 @@ export async function GET(request: NextRequest) {
             .eq('id', store.id)
         }
 
-        // Sincronizar produtos se a loja estiver online e for Shopify
+        // Sincronizar produtos se a loja estiver online e tiver integração configurada
         let productsSynced = 0
         let syncError = null
-        if (isOnline && store.platform === 'shopify' && store.platform_config) {
+        if (isOnline && store.platform_config) {
           try {
-            productsSynced = await syncShopifyProducts(supabase, store)
+            const stockAlertConfig = await getStockAlertConfigForStore(supabase, store)
+
+            if (store.platform === 'shopify') {
+              productsSynced = await syncShopifyProducts(supabase, store, stockAlertConfig)
+            } else if (store.platform === 'woocommerce') {
+              productsSynced = await syncWooCommerceProducts(supabase, store, stockAlertConfig)
+            } else if (store.platform === 'nuvemshop') {
+              productsSynced = await syncNuvemshopProducts(supabase, store, stockAlertConfig)
+            } else if (store.platform === 'tray') {
+              productsSynced = await syncTrayProducts(supabase, store, stockAlertConfig)
+            } else if (store.platform === 'vtex') {
+              productsSynced = await syncVtexProducts(supabase, store, stockAlertConfig)
+            }
           } catch (error) {
             syncError = String(error)
             console.error(`Erro ao sincronizar produtos da loja ${store.name}:`, error)
@@ -100,7 +115,7 @@ export async function GET(request: NextRequest) {
           changed: store.status !== newStatus,
           productsSynced,
           syncError,
-          hasShopifyConfig: !!store.platform_config,
+          hasPlatformConfig: !!store.platform_config,
           platform: store.platform
         })
       } catch (error) {
@@ -133,6 +148,71 @@ interface CheckResult {
   statusCode?: number
   method?: string
   error?: string
+}
+
+type StockAlertConfig = {
+  lowStockThreshold: number
+  enableLowStock: boolean
+  enableOutOfStock: boolean
+  enableBackInStock: boolean
+}
+
+async function getStockAlertConfigForStore(supabase: any, store: any): Promise<StockAlertConfig> {
+  const defaultConfig: StockAlertConfig = {
+    lowStockThreshold: 5,
+    enableLowStock: true,
+    enableOutOfStock: true,
+    enableBackInStock: true,
+  }
+
+  try {
+    const { data: rules } = await supabase
+      .from('alert_rules')
+      .select('id, store_id, type, condition')
+      .eq('user_id', store.user_id)
+      .eq('is_active', true)
+      .eq('type', 'STOCK_LEVEL')
+
+    if (!rules || rules.length === 0) {
+      return defaultConfig
+    }
+
+    // Regra específica da loja tem prioridade; depois regras globais (store_id nulo)
+    const storeRule = rules.find((r: any) => r.store_id === store.id)
+    const rule = storeRule || rules.find((r: any) => !r.store_id) || rules[0]
+
+    const condition = (rule && rule.condition) || {}
+
+    const lowStockThreshold =
+      typeof condition.lowStockThreshold === 'number' && condition.lowStockThreshold > 0
+        ? condition.lowStockThreshold
+        : defaultConfig.lowStockThreshold
+
+    const enableLowStock =
+      typeof condition.enableLowStock === 'boolean'
+        ? condition.enableLowStock
+        : defaultConfig.enableLowStock
+
+    const enableOutOfStock =
+      typeof condition.enableOutOfStock === 'boolean'
+        ? condition.enableOutOfStock
+        : defaultConfig.enableOutOfStock
+
+    const enableBackInStock =
+      typeof condition.enableBackInStock === 'boolean'
+        ? condition.enableBackInStock
+        : defaultConfig.enableBackInStock
+
+    return {
+      lowStockThreshold,
+      enableLowStock,
+      enableOutOfStock,
+      enableBackInStock,
+    }
+  } catch (error) {
+    console.error('Erro ao carregar regras de estoque para loja', store.id, error)
+    return defaultConfig
+  }
 }
 
 async function createAlertWithNotification(
@@ -169,7 +249,11 @@ async function createAlertWithNotification(
   }).catch(err => console.error('Erro ao enviar notificações:', err))
 }
 
-async function syncShopifyProducts(supabase: any, store: any): Promise<number> {
+async function syncShopifyProducts(
+  supabase: any,
+  store: any,
+  stockConfig?: StockAlertConfig
+): Promise<number> {
   const config = store.platform_config
   if (!config || !config.accessToken) {
     console.log(`Loja ${store.name} sem credenciais configuradas`)
@@ -198,7 +282,10 @@ async function syncShopifyProducts(supabase: any, store: any): Promise<number> {
     const products = data.products || []
 
     let synced = 0
-    const lowStockThreshold = 5
+    const lowStockThreshold = stockConfig?.lowStockThreshold ?? 5
+    const enableOutOfStock = stockConfig?.enableOutOfStock ?? true
+    const enableBackInStock = stockConfig?.enableBackInStock ?? true
+    const enableLowStock = stockConfig?.enableLowStock ?? true
     
     for (const product of products) {
       const variant = product.variants?.[0]
@@ -246,7 +333,11 @@ async function syncShopifyProducts(supabase: any, store: any): Promise<number> {
         // Criar alertas baseado em mudanças de estoque
         if (existingProduct) {
           // Produto ficou sem estoque
-          if (existingProduct.stock_quantity > 0 && stockQuantity === 0) {
+          if (
+            existingProduct.stock_quantity > 0 &&
+            stockQuantity === 0 &&
+            enableOutOfStock
+          ) {
             await createAlertWithNotification(supabase, store, {
               type: 'ESTOQUE_ZERADO',
               severity: 'high',
@@ -256,7 +347,11 @@ async function syncShopifyProducts(supabase: any, store: any): Promise<number> {
             })
           }
           // Produto voltou ao estoque
-          else if (existingProduct.stock_quantity === 0 && stockQuantity > 0) {
+          else if (
+            existingProduct.stock_quantity === 0 &&
+            stockQuantity > 0 &&
+            enableBackInStock
+          ) {
             await createAlertWithNotification(supabase, store, {
               type: 'ESTOQUE_DISPONIVEL',
               severity: 'low',
@@ -266,7 +361,12 @@ async function syncShopifyProducts(supabase: any, store: any): Promise<number> {
             })
           }
           // Estoque baixo
-          else if (stockQuantity > 0 && stockQuantity <= lowStockThreshold && existingProduct.stock_quantity > lowStockThreshold) {
+          else if (
+            stockQuantity > 0 &&
+            stockQuantity <= lowStockThreshold &&
+            existingProduct.stock_quantity > lowStockThreshold &&
+            enableLowStock
+          ) {
             await createAlertWithNotification(supabase, store, {
               type: 'ESTOQUE_BAIXO',
               severity: 'medium',
@@ -282,6 +382,523 @@ async function syncShopifyProducts(supabase: any, store: any): Promise<number> {
     return synced
   } catch (error) {
     console.error('Erro ao sincronizar produtos Shopify:', error)
+    throw error
+  }
+}
+
+async function syncWooCommerceProducts(
+  supabase: any,
+  store: any,
+  stockConfig?: StockAlertConfig
+): Promise<number> {
+  const config = store.platform_config
+  if (!config || !config.consumerKey || !config.consumerSecret) {
+    console.log(`Loja ${store.name} sem credenciais WooCommerce configuradas`)
+    return 0
+  }
+
+  try {
+    // Limpar domain (remover https:// se tiver)
+    const domain = store.domain.replace(/^https?:\/\//, '')
+
+    const params = new URLSearchParams({
+      per_page: '50',
+      status: 'publish',
+      consumer_key: String(config.consumerKey),
+      consumer_secret: String(config.consumerSecret),
+    })
+
+    const wooUrl = `https://${domain}/wp-json/wc/v3/products?${params.toString()}`
+
+    const response = await fetch(wooUrl, {
+      headers: {
+        'User-Agent': 'PulseWatch/1.0',
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`WooCommerce API error: ${response.status}`)
+    }
+
+    const products = await response.json()
+
+    let synced = 0
+    const lowStockThreshold = stockConfig?.lowStockThreshold ?? 5
+    const enableOutOfStock = stockConfig?.enableOutOfStock ?? true
+    const enableBackInStock = stockConfig?.enableBackInStock ?? true
+    const enableLowStock = stockConfig?.enableLowStock ?? true
+
+    for (const product of products || []) {
+      const stockQuantity = product.stock_quantity ?? 0
+
+      const productUrl = product.permalink || `https://${domain}/?p=${product.id}`
+      const category = product.categories?.[0]?.name || 'Sem categoria'
+
+      const priceValue =
+        parseFloat(product.price || product.regular_price || '0') || 0
+
+      const productData = {
+        store_id: store.id,
+        external_id: String(product.id),
+        name: product.name,
+        sku: product.sku || null,
+        price: priceValue,
+        stock_quantity: stockQuantity,
+        stock_status:
+          stockQuantity > 0 && product.stock_status === 'instock'
+            ? 'in_stock'
+            : 'out_of_stock',
+        product_url: productUrl,
+        category,
+        last_synced: new Date().toISOString(),
+      }
+
+      const { data: existingProduct } = await supabase
+        .from('products')
+        .select('stock_quantity, stock_status')
+        .eq('store_id', store.id)
+        .eq('external_id', String(product.id))
+        .single()
+
+      const { error } = await supabase
+        .from('products')
+        .upsert(productData, {
+          onConflict: 'store_id,external_id',
+        })
+
+      if (!error) {
+        synced++
+
+        if (existingProduct) {
+          // Produto ficou sem estoque
+          if (
+            existingProduct.stock_quantity > 0 &&
+            stockQuantity === 0 &&
+            enableOutOfStock
+          ) {
+            await createAlertWithNotification(supabase, store, {
+              type: 'ESTOQUE_ZERADO',
+              severity: 'high',
+              title: 'Produto sem Estoque',
+              message: `O produto "${product.name}" ficou sem estoque!`,
+              metadata: { product_id: product.id, sku: product.sku },
+            })
+          }
+          // Produto voltou ao estoque
+          else if (
+            existingProduct.stock_quantity === 0 &&
+            stockQuantity > 0 &&
+            enableBackInStock
+          ) {
+            await createAlertWithNotification(supabase, store, {
+              type: 'ESTOQUE_DISPONIVEL',
+              severity: 'low',
+              title: 'Produto Voltou ao Estoque',
+              message: `O produto "${product.name}" voltou ao estoque (${stockQuantity} unidades)`,
+              metadata: { product_id: product.id, sku: product.sku },
+            })
+          }
+          // Estoque baixo
+          else if (
+            stockQuantity > 0 &&
+            stockQuantity <= lowStockThreshold &&
+            existingProduct.stock_quantity > lowStockThreshold &&
+            enableLowStock
+          ) {
+            await createAlertWithNotification(supabase, store, {
+              type: 'ESTOQUE_BAIXO',
+              severity: 'medium',
+              title: 'Estoque Baixo',
+              message: `O produto "${product.name}" está com estoque baixo (${stockQuantity} unidades)`,
+              metadata: {
+                product_id: product.id,
+                sku: product.sku,
+                threshold: lowStockThreshold,
+              },
+            })
+          }
+        }
+      }
+    }
+
+    return synced
+  } catch (error) {
+    console.error('Erro ao sincronizar produtos WooCommerce:', error)
+    throw error
+  }
+}
+
+async function syncNuvemshopProducts(
+  supabase: any,
+  store: any,
+  stockConfig?: StockAlertConfig
+): Promise<number> {
+  const config = store.platform_config
+  if (!config || !config.storeId || !config.accessToken) {
+    console.log(`Loja ${store.name} sem credenciais Nuvemshop configuradas`)
+    return 0
+  }
+
+  try {
+    const client = new NuvemshopClient({
+      storeId: String(config.storeId),
+      accessToken: String(config.accessToken),
+    })
+
+    const products = await client.fetchProducts(50)
+
+    let synced = 0
+    const lowStockThreshold = stockConfig?.lowStockThreshold ?? 5
+    const enableOutOfStock = stockConfig?.enableOutOfStock ?? true
+    const enableBackInStock = stockConfig?.enableBackInStock ?? true
+    const enableLowStock = stockConfig?.enableLowStock ?? true
+    const domain = store.domain.replace(/^https?:\/\//, '')
+
+    for (const product of products || []) {
+      const variant = product.variants?.[0]
+      if (!variant) continue
+
+      const stockQuantity = variant.stock || 0
+
+      const handle = product.handle?.pt || ''
+      const productUrl = handle
+        ? `https://${domain}/${handle}`
+        : `https://${domain}`
+
+      const priceValue = parseFloat(variant.price || '0') || 0
+
+      const productData = {
+        store_id: store.id,
+        external_id: String(product.id),
+        name: product.name?.pt || `Produto ${product.id}`,
+        sku: variant.sku || null,
+        price: priceValue,
+        stock_quantity: stockQuantity,
+        stock_status: stockQuantity > 0 ? 'in_stock' : 'out_of_stock',
+        product_url: productUrl,
+        category: 'Sem categoria',
+        last_synced: new Date().toISOString(),
+      }
+
+      const { data: existingProduct } = await supabase
+        .from('products')
+        .select('stock_quantity, stock_status')
+        .eq('store_id', store.id)
+        .eq('external_id', String(product.id))
+        .single()
+
+      const { error } = await supabase
+        .from('products')
+        .upsert(productData, {
+          onConflict: 'store_id,external_id',
+        })
+
+      if (!error) {
+        synced++
+
+        if (existingProduct) {
+          // Produto ficou sem estoque
+          if (
+            existingProduct.stock_quantity > 0 &&
+            stockQuantity === 0 &&
+            enableOutOfStock
+          ) {
+            await createAlertWithNotification(supabase, store, {
+              type: 'ESTOQUE_ZERADO',
+              severity: 'high',
+              title: 'Produto sem Estoque',
+              message: `O produto "${product.name?.pt || product.id}" ficou sem estoque!`,
+              metadata: { product_id: product.id, sku: variant.sku },
+            })
+          }
+          // Produto voltou ao estoque
+          else if (
+            existingProduct.stock_quantity === 0 &&
+            stockQuantity > 0 &&
+            enableBackInStock
+          ) {
+            await createAlertWithNotification(supabase, store, {
+              type: 'ESTOQUE_DISPONIVEL',
+              severity: 'low',
+              title: 'Produto Voltou ao Estoque',
+              message: `O produto "${product.name?.pt || product.id}" voltou ao estoque (${stockQuantity} unidades)`
+              ,
+              metadata: { product_id: product.id, sku: variant.sku },
+            })
+          }
+          // Estoque baixo
+          else if (
+            stockQuantity > 0 &&
+            stockQuantity <= lowStockThreshold &&
+            existingProduct.stock_quantity > lowStockThreshold &&
+            enableLowStock
+          ) {
+            await createAlertWithNotification(supabase, store, {
+              type: 'ESTOQUE_BAIXO',
+              severity: 'medium',
+              title: 'Estoque Baixo',
+              message: `O produto "${product.name?.pt || product.id}" está com estoque baixo (${stockQuantity} unidades)`
+              ,
+              metadata: {
+                product_id: product.id,
+                sku: variant.sku,
+                threshold: lowStockThreshold,
+              },
+            })
+          }
+        }
+      }
+    }
+
+    return synced
+  } catch (error) {
+    console.error('Erro ao sincronizar produtos Nuvemshop:', error)
+    throw error
+  }
+}
+
+async function syncTrayProducts(
+  supabase: any,
+  store: any,
+  stockConfig?: StockAlertConfig
+): Promise<number> {
+  const config = store.platform_config
+  if (!config || !config.accessToken) {
+    console.log(`Loja ${store.name} sem credenciais Tray configuradas`)
+    return 0
+  }
+
+  try {
+    const domain = store.domain.replace(/^https?:\/\//, '')
+    const client = new TrayClient({
+      domain,
+      accessToken: String(config.accessToken),
+    })
+
+    const products = await client.fetchProducts(50, 1)
+
+    let synced = 0
+    const lowStockThreshold = stockConfig?.lowStockThreshold ?? 5
+    const enableOutOfStock = stockConfig?.enableOutOfStock ?? true
+    const enableBackInStock = stockConfig?.enableBackInStock ?? true
+    const enableLowStock = stockConfig?.enableLowStock ?? true
+
+    for (const item of products || []) {
+      const stockQuantity = Number(item.stock || '0') || 0
+
+      const productUrl =
+        item.url?.https ||
+        item.url?.http ||
+        `https://${domain}`
+
+      const basePrice =
+        (item.promotional_price && item.promotional_price !== '0.00'
+          ? item.promotional_price
+          : item.price) || '0'
+
+      const priceValue = parseFloat(basePrice) || 0
+
+      const category = item.category_id || 'Sem categoria'
+
+      const productData = {
+        store_id: store.id,
+        external_id: String(item.id),
+        name: item.name,
+        sku: item.reference || null,
+        price: priceValue,
+        stock_quantity: stockQuantity,
+        stock_status: stockQuantity > 0 ? 'in_stock' : 'out_of_stock',
+        product_url: productUrl,
+        category,
+        last_synced: new Date().toISOString(),
+      }
+
+      const { data: existingProduct } = await supabase
+        .from('products')
+        .select('stock_quantity, stock_status')
+        .eq('store_id', store.id)
+        .eq('external_id', String(item.id))
+        .single()
+
+      const { error } = await supabase
+        .from('products')
+        .upsert(productData, {
+          onConflict: 'store_id,external_id',
+        })
+
+      if (!error) {
+        synced++
+
+        if (existingProduct) {
+          if (
+            existingProduct.stock_quantity > 0 &&
+            stockQuantity === 0 &&
+            enableOutOfStock
+          ) {
+            await createAlertWithNotification(supabase, store, {
+              type: 'ESTOQUE_ZERADO',
+              severity: 'high',
+              title: 'Produto sem Estoque',
+              message: `O produto "${item.name}" ficou sem estoque!`,
+              metadata: { product_id: item.id, sku: item.reference },
+            })
+          } else if (
+            existingProduct.stock_quantity === 0 &&
+            stockQuantity > 0 &&
+            enableBackInStock
+          ) {
+            await createAlertWithNotification(supabase, store, {
+              type: 'ESTOQUE_DISPONIVEL',
+              severity: 'low',
+              title: 'Produto Voltou ao Estoque',
+              message: `O produto "${item.name}" voltou ao estoque (${stockQuantity} unidades)`,
+              metadata: { product_id: item.id, sku: item.reference },
+            })
+          } else if (
+            stockQuantity > 0 &&
+            stockQuantity <= lowStockThreshold &&
+            existingProduct.stock_quantity > lowStockThreshold &&
+            enableLowStock
+          ) {
+            await createAlertWithNotification(supabase, store, {
+              type: 'ESTOQUE_BAIXO',
+              severity: 'medium',
+              title: 'Estoque Baixo',
+              message: `O produto "${item.name}" está com estoque baixo (${stockQuantity} unidades)`,
+              metadata: {
+                product_id: item.id,
+                sku: item.reference,
+                threshold: lowStockThreshold,
+              },
+            })
+          }
+        }
+      }
+    }
+
+    return synced
+  } catch (error) {
+    console.error('Erro ao sincronizar produtos Tray:', error)
+    throw error
+  }
+}
+
+async function syncVtexProducts(
+  supabase: any,
+  store: any,
+  stockConfig?: StockAlertConfig
+): Promise<number> {
+  const config = store.platform_config
+  if (!config || !config.accountName || !config.appKey || !config.appToken) {
+    console.log(`Loja ${store.name} sem credenciais VTEX configuradas`)
+    return 0
+  }
+
+  try {
+    const client = new VtexClient({
+      accountName: String(config.accountName),
+      appKey: String(config.appKey),
+      appToken: String(config.appToken),
+      environment: config.environment || 'vtexcommercestable',
+    })
+
+    const products = await client.fetchProducts(0, 49)
+
+    let synced = 0
+    const lowStockThreshold = stockConfig?.lowStockThreshold ?? 5
+    const enableOutOfStock = stockConfig?.enableOutOfStock ?? true
+    const enableBackInStock = stockConfig?.enableBackInStock ?? true
+    const enableLowStock = stockConfig?.enableLowStock ?? true
+    const domain = store.domain.replace(/^https?:\/\//, '')
+
+    for (const product of products || []) {
+      const firstItem = product.items?.[0]
+      const firstSeller = firstItem?.sellers?.[0]
+      const offer = firstSeller?.commertialOffer
+
+      const stockQuantity = offer?.AvailableQuantity ?? 0
+      const priceValue = typeof offer?.Price === 'number' ? offer.Price : 0
+
+      const productUrl =
+        (product.link && product.link.startsWith('http'))
+          ? product.link
+          : product.linkText
+            ? `https://${domain}/${product.linkText}/p`
+            : `https://${domain}`
+
+      const category = product.categories?.[0] || 'Sem categoria'
+
+      const productData = {
+        store_id: store.id,
+        external_id: String(product.productId),
+        name: product.productName,
+        sku: firstItem?.itemId || null,
+        price: priceValue,
+        stock_quantity: stockQuantity,
+        stock_status: stockQuantity > 0 ? 'in_stock' : 'out_of_stock',
+        product_url: productUrl,
+        category,
+        last_synced: new Date().toISOString(),
+      }
+
+      const { data: existingProduct } = await supabase
+        .from('products')
+        .select('stock_quantity, stock_status')
+        .eq('store_id', store.id)
+        .eq('external_id', String(product.productId))
+        .single()
+
+      const { error } = await supabase
+        .from('products')
+        .upsert(productData, {
+          onConflict: 'store_id,external_id',
+        })
+
+      if (!error) {
+        synced++
+
+        if (existingProduct) {
+          if (existingProduct.stock_quantity > 0 && stockQuantity === 0) {
+            await createAlertWithNotification(supabase, store, {
+              type: 'ESTOQUE_ZERADO',
+              severity: 'high',
+              title: 'Produto sem Estoque',
+              message: `O produto "${product.productName}" ficou sem estoque!`,
+              metadata: { product_id: product.productId, sku: firstItem?.itemId },
+            })
+          } else if (existingProduct.stock_quantity === 0 && stockQuantity > 0) {
+            await createAlertWithNotification(supabase, store, {
+              type: 'ESTOQUE_DISPONIVEL',
+              severity: 'low',
+              title: 'Produto Voltou ao Estoque',
+              message: `O produto "${product.productName}" voltou ao estoque (${stockQuantity} unidades)`,
+              metadata: { product_id: product.productId, sku: firstItem?.itemId },
+            })
+          } else if (
+            stockQuantity > 0 &&
+            stockQuantity <= lowStockThreshold &&
+            existingProduct.stock_quantity > lowStockThreshold
+          ) {
+            await createAlertWithNotification(supabase, store, {
+              type: 'ESTOQUE_BAIXO',
+              severity: 'medium',
+              title: 'Estoque Baixo',
+              message: `O produto "${product.productName}" está com estoque baixo (${stockQuantity} unidades)`,
+              metadata: {
+                product_id: product.productId,
+                sku: firstItem?.itemId,
+                threshold: lowStockThreshold,
+              },
+            })
+          }
+        }
+      }
+    }
+
+    return synced
+  } catch (error) {
+    console.error('Erro ao sincronizar produtos VTEX:', error)
     throw error
   }
 }

@@ -21,9 +21,20 @@ export default function StoresPage() {
     domain: '',
     shopifyApiKey: '',
     shopifyPassword: '',
+    wooConsumerKey: '',
+    wooConsumerSecret: '',
+    nuvemshopStoreId: '',
+    nuvemshopAccessToken: '',
+    trayAccessToken: '',
+    vtexAccountName: '',
+    vtexAppKey: '',
+    vtexAppToken: '',
   })
+  const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null)
   const [detecting, setDetecting] = useState(false)
   const [detectedPlatform, setDetectedPlatform] = useState<any>(null)
+
+  const currentPlatform = selectedPlatform || detectedPlatform?.platform || null
 
   useEffect(() => {
     loadStores()
@@ -69,17 +80,46 @@ export default function StoresPage() {
 
     if (!user) return
 
-    // Detectar plataforma se não foi detectada ainda
-    let platform = detectedPlatform
-    if (!platform) {
-      platform = await detectPlatform(formData.domain)
+    // Determinar plataforma (manual > detectada > auto)
+    let platformKey = selectedPlatform || detectedPlatform?.platform || null
+
+    if (!platformKey) {
+      const detected = await detectPlatform(formData.domain)
+      platformKey = detected.platform
+      setDetectedPlatform(detected)
     }
 
-    let platformConfig = null
-    if (platform.platform === 'shopify' && formData.shopifyApiKey && formData.shopifyPassword) {
+    let platformConfig: any = null
+    if (platformKey === 'shopify' && formData.shopifyApiKey && formData.shopifyPassword) {
       platformConfig = {
         apiKey: formData.shopifyApiKey,
         accessToken: formData.shopifyPassword,
+      }
+    } else if (platformKey === 'woocommerce' && formData.wooConsumerKey && formData.wooConsumerSecret) {
+      platformConfig = {
+        consumerKey: formData.wooConsumerKey,
+        consumerSecret: formData.wooConsumerSecret,
+      }
+    } else if (platformKey === 'nuvemshop' && formData.nuvemshopStoreId && formData.nuvemshopAccessToken) {
+      platformConfig = {
+        storeId: formData.nuvemshopStoreId,
+        accessToken: formData.nuvemshopAccessToken,
+      }
+    } else if (platformKey === 'tray' && formData.trayAccessToken) {
+      platformConfig = {
+        accessToken: formData.trayAccessToken,
+      }
+    } else if (
+      platformKey === 'vtex' &&
+      formData.vtexAccountName &&
+      formData.vtexAppKey &&
+      formData.vtexAppToken
+    ) {
+      platformConfig = {
+        accountName: formData.vtexAccountName,
+        appKey: formData.vtexAppKey,
+        appToken: formData.vtexAppToken,
+        environment: 'vtexcommercestable',
       }
     }
 
@@ -90,14 +130,28 @@ export default function StoresPage() {
       user_id: user.id,
       name: formData.name,
       domain: cleanDomain,
-      platform: platform.platform,
+      platform: platformKey,
       platform_config: platformConfig,
       status: 'checking',
       is_active: true,
     })
 
     if (!error) {
-      setFormData({ name: '', domain: '', shopifyApiKey: '', shopifyPassword: '' })
+      setFormData({
+        name: '',
+        domain: '',
+        shopifyApiKey: '',
+        shopifyPassword: '',
+        wooConsumerKey: '',
+        wooConsumerSecret: '',
+        nuvemshopStoreId: '',
+        nuvemshopAccessToken: '',
+        trayAccessToken: '',
+        vtexAccountName: '',
+        vtexAppKey: '',
+        vtexAppToken: '',
+      })
+      setSelectedPlatform(null)
       setDetectedPlatform(null)
       setShowAddForm(false)
       loadStores()
@@ -114,13 +168,54 @@ export default function StoresPage() {
     // Normalizar domain (remover https:// ou http://)
     const cleanDomain = formData.domain.replace(/^https?:\/\//, '')
 
-    // Preparar platform_config
-    let platformConfig = editingStore.platform_config
-    if (detectedPlatform?.platform === 'shopify' && (formData.shopifyApiKey || formData.shopifyPassword)) {
+    let platformConfig: any = editingStore.platform_config
+    if (currentPlatform === 'shopify' && (formData.shopifyApiKey || formData.shopifyPassword)) {
       platformConfig = {
         ...platformConfig,
         ...(formData.shopifyApiKey && { apiKey: formData.shopifyApiKey }),
         ...(formData.shopifyPassword && { accessToken: formData.shopifyPassword }),
+      }
+    }
+
+    if (currentPlatform === 'woocommerce' && (formData.wooConsumerKey || formData.wooConsumerSecret)) {
+      platformConfig = {
+        ...platformConfig,
+        ...(formData.wooConsumerKey && { consumerKey: formData.wooConsumerKey }),
+        ...(formData.wooConsumerSecret && { consumerSecret: formData.wooConsumerSecret }),
+      }
+    }
+
+    if (currentPlatform === 'nuvemshop' && (formData.nuvemshopStoreId || formData.nuvemshopAccessToken)) {
+      platformConfig = {
+        ...platformConfig,
+        ...(formData.nuvemshopStoreId && { storeId: formData.nuvemshopStoreId }),
+        ...(formData.nuvemshopAccessToken && { accessToken: formData.nuvemshopAccessToken }),
+      }
+    }
+
+    if (currentPlatform === 'tray' && formData.trayAccessToken) {
+      platformConfig = {
+        ...platformConfig,
+        accessToken: formData.trayAccessToken,
+      }
+    }
+
+    if (
+      currentPlatform === 'vtex' &&
+      (formData.vtexAccountName || formData.vtexAppKey || formData.vtexAppToken)
+    ) {
+      platformConfig = {
+        ...platformConfig,
+        ...(formData.vtexAccountName && { accountName: formData.vtexAccountName }),
+        ...(formData.vtexAppKey && { appKey: formData.vtexAppKey }),
+        ...(formData.vtexAppToken && { appToken: formData.vtexAppToken }),
+      }
+    }
+
+    if (detectedPlatform?.platform === 'tray' && formData.trayAccessToken) {
+      platformConfig = {
+        ...platformConfig,
+        accessToken: formData.trayAccessToken,
       }
     }
 
@@ -134,7 +229,21 @@ export default function StoresPage() {
       .eq('id', editingStore.id)
 
     if (!error) {
-      setFormData({ name: '', domain: '', shopifyApiKey: '', shopifyPassword: '' })
+      setFormData({
+        name: '',
+        domain: '',
+        shopifyApiKey: '',
+        shopifyPassword: '',
+        wooConsumerKey: '',
+        wooConsumerSecret: '',
+        nuvemshopStoreId: '',
+        nuvemshopAccessToken: '',
+        trayAccessToken: '',
+        vtexAccountName: '',
+        vtexAppKey: '',
+        vtexAppToken: '',
+      })
+      setSelectedPlatform(null)
       setDetectedPlatform(null)
       setEditingStore(null)
       setShowAddForm(false)
@@ -149,14 +258,37 @@ export default function StoresPage() {
       domain: store.domain,
       shopifyApiKey: '',
       shopifyPassword: '',
+      wooConsumerKey: '',
+      wooConsumerSecret: '',
+      nuvemshopStoreId: '',
+      nuvemshopAccessToken: '',
+      trayAccessToken: '',
+      vtexAccountName: '',
+      vtexAppKey: '',
+      vtexAppToken: '',
     })
+    setSelectedPlatform(store.platform)
     setDetectedPlatform({ platform: store.platform })
     setShowAddForm(true)
   }
 
   const cancelEdit = () => {
     setEditingStore(null)
-    setFormData({ name: '', domain: '', shopifyApiKey: '', shopifyPassword: '' })
+    setFormData({
+      name: '',
+      domain: '',
+      shopifyApiKey: '',
+      shopifyPassword: '',
+      wooConsumerKey: '',
+      wooConsumerSecret: '',
+      nuvemshopStoreId: '',
+      nuvemshopAccessToken: '',
+      trayAccessToken: '',
+      vtexAccountName: '',
+      vtexAppKey: '',
+      vtexAppToken: '',
+    })
+    setSelectedPlatform(null)
     setDetectedPlatform(null)
     setShowAddForm(false)
   }
@@ -202,6 +334,8 @@ export default function StoresPage() {
       shopify: 'bg-green-600',
       woocommerce: 'bg-purple-600',
       nuvemshop: 'bg-blue-600',
+      tray: 'bg-orange-600',
+      vtex: 'bg-red-600',
       unknown: 'bg-gray-600',
     }
 
@@ -305,7 +439,57 @@ export default function StoresPage() {
                   </div>
                 )}
 
-                {detectedPlatform?.platform === 'shopify' && (
+                <div className="space-y-2">
+                  <Label htmlFor="platform">Plataforma (opcional)</Label>
+                  <select
+                    id="platform"
+                    className="w-full border rounded-md px-2 py-2 text-sm bg-background"
+                    value={currentPlatform || ''}
+                    onChange={(e) =>
+                      setSelectedPlatform(e.target.value ? e.target.value : null)
+                    }
+                  >
+                    <option value="">Automática</option>
+                    <option value="shopify">Shopify</option>
+                    <option value="woocommerce">WooCommerce</option>
+                    <option value="nuvemshop">Nuvemshop</option>
+                    <option value="tray">Tray</option>
+                    <option value="vtex">VTEX</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground">
+                    Se preferir, selecione manualmente a plataforma. Se deixar em branco, usaremos a detecção automática.
+                  </p>
+                </div>
+
+                {currentPlatform === 'tray' && (
+                  <div className="space-y-4 p-4 border rounded-md">
+                    <p className="text-sm font-medium">
+                      Credenciais da API Tray
+                      {editingStore && (
+                        <span className="text-xs font-normal text-muted-foreground ml-2">
+                          (Deixe vazio para manter as atuais)
+                        </span>
+                      )}
+                    </p>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="trayAccessToken">Access Token</Label>
+                        <Input
+                          id="trayAccessToken"
+                          type="password"
+                          placeholder={editingStore ? 'Manter atual' : 'access_token...'}
+                          value={formData.trayAccessToken}
+                          onChange={(e) =>
+                            setFormData({ ...formData, trayAccessToken: e.target.value })
+                          }
+                          required={!editingStore}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {currentPlatform === 'shopify' && (
                   <div className="space-y-4 p-4 border rounded-md">
                     <p className="text-sm font-medium">
                       Credenciais da API Shopify
@@ -346,6 +530,87 @@ export default function StoresPage() {
                     <p className="text-xs text-muted-foreground">
                       📝 Você pode obter essas credenciais em: Shopify Admin → Settings → Apps and sales channels → Develop apps
                     </p>
+                  </div>
+                )}
+
+                {currentPlatform === 'woocommerce' && (
+                  <div className="space-y-4 p-4 border rounded-md">
+                    <p className="text-sm font-medium">
+                      Credenciais da API WooCommerce
+                      {editingStore && (
+                        <span className="text-xs font-normal text-muted-foreground ml-2">
+                          (Deixe vazio para manter as atuais)
+                        </span>
+                      )}
+                    </p>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="wooConsumerKey">Consumer Key</Label>
+                        <Input
+                          id="wooConsumerKey"
+                          type="password"
+                          placeholder={editingStore ? "Manter atual" : "ck_..."}
+                          value={formData.wooConsumerKey}
+                          onChange={(e) =>
+                            setFormData({ ...formData, wooConsumerKey: e.target.value })
+                          }
+                          required={!editingStore}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="wooConsumerSecret">Consumer Secret</Label>
+                        <Input
+                          id="wooConsumerSecret"
+                          type="password"
+                          placeholder={editingStore ? "Manter atual" : "cs_..."}
+                          value={formData.wooConsumerSecret}
+                          onChange={(e) =>
+                            setFormData({ ...formData, wooConsumerSecret: e.target.value })
+                          }
+                          required={!editingStore}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {currentPlatform === 'nuvemshop' && (
+                  <div className="space-y-4 p-4 border rounded-md">
+                    <p className="text-sm font-medium">
+                      Credenciais da API Nuvemshop
+                      {editingStore && (
+                        <span className="text-xs font-normal text-muted-foreground ml-2">
+                          (Deixe vazio para manter as atuais)
+                        </span>
+                      )}
+                    </p>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="nuvemshopStoreId">Store ID</Label>
+                        <Input
+                          id="nuvemshopStoreId"
+                          placeholder={editingStore ? "Manter atual" : "123456"}
+                          value={formData.nuvemshopStoreId}
+                          onChange={(e) =>
+                            setFormData({ ...formData, nuvemshopStoreId: e.target.value })
+                          }
+                          required={!editingStore}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="nuvemshopAccessToken">Access Token</Label>
+                        <Input
+                          id="nuvemshopAccessToken"
+                          type="password"
+                          placeholder={editingStore ? "Manter atual" : "token..."}
+                          value={formData.nuvemshopAccessToken}
+                          onChange={(e) =>
+                            setFormData({ ...formData, nuvemshopAccessToken: e.target.value })
+                          }
+                          required={!editingStore}
+                        />
+                      </div>
+                    </div>
                   </div>
                 )}
 
