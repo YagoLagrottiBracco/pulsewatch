@@ -18,6 +18,8 @@ export interface Database {
           telegram_chat_id: string | null
           email_notifications: boolean
           telegram_notifications: boolean
+          onboarding_completed: boolean
+          onboarding_completed_at: string | null
           created_at: string
           updated_at: string
         }
@@ -29,6 +31,8 @@ export interface Database {
           telegram_chat_id?: string | null
           email_notifications?: boolean
           telegram_notifications?: boolean
+          onboarding_completed?: boolean
+          onboarding_completed_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -40,6 +44,8 @@ export interface Database {
           telegram_chat_id?: string | null
           email_notifications?: boolean
           telegram_notifications?: boolean
+          onboarding_completed?: boolean
+          onboarding_completed_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -288,6 +294,7 @@ export interface Database {
           seo_description: string | null
           seo_og_image: string | null
           seo_keywords: string | null
+          is_page: boolean | null
         }
         Insert: {
           id?: string
@@ -307,6 +314,7 @@ export interface Database {
           seo_description?: string | null
           seo_og_image?: string | null
           seo_keywords?: string | null
+          is_page?: boolean | null
         }
         Update: {
           id?: string
@@ -326,6 +334,7 @@ export interface Database {
           seo_description?: string | null
           seo_og_image?: string | null
           seo_keywords?: string | null
+          is_page?: boolean | null
         }
       }
     }

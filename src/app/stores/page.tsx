@@ -33,12 +33,185 @@ export default function StoresPage() {
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null)
   const [detecting, setDetecting] = useState(false)
   const [detectedPlatform, setDetectedPlatform] = useState<any>(null)
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(false)
+  const [onboardingStep, setOnboardingStep] = useState<number>(0)
+  const [profile, setProfile] = useState<any | null>(null)
+  const [onboardingLoading, setOnboardingLoading] = useState<boolean>(true)
 
   const currentPlatform = selectedPlatform || detectedPlatform?.platform || null
 
   useEffect(() => {
     loadStores()
+    loadOnboardingStatus()
   }, [])
+
+  useEffect(() => {
+    if (onboardingLoading) return
+
+    if (profile?.onboarding_completed) {
+      setShowOnboarding(false)
+    } else {
+      setShowOnboarding(true)
+      setOnboardingStep(0)
+    }
+  }, [profile, onboardingLoading])
+
+  useEffect(() => {
+    if (onboardingLoading) return
+
+    if (!profile?.onboarding_completed && stores.length === 0) {
+      setOnboardingStep(0)
+    }
+  }, [stores, profile, onboardingLoading])
+
+  const loadOnboardingStatus = async () => {
+    setOnboardingLoading(true)
+
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        setProfile(null)
+        setShowOnboarding(false)
+        setOnboardingLoading(false)
+        return
+      }
+
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('id, user_id, email, onboarding_completed, onboarding_completed_at')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (error) {
+        console.error('Erro ao carregar perfil do usuário:', error)
+      }
+
+      let profileRecord = data || null
+      const localCompleted =
+        typeof window !== 'undefined' &&
+        localStorage.getItem('pulsewatch_onboarding_completed') === 'true'
+
+      if (localCompleted && !profileRecord?.onboarding_completed) {
+        const completionData = {
+          onboarding_completed: true,
+          onboarding_completed_at: new Date().toISOString(),
+        }
+
+        const { data: syncedProfile, error: syncError } = await supabase
+          .from('user_profiles')
+          .upsert(
+            {
+              id: profileRecord?.id,
+              user_id: user.id,
+              email: profileRecord?.email || user.email,
+              ...completionData,
+            },
+            { onConflict: 'user_id' }
+          )
+          .select('id, user_id, email, onboarding_completed, onboarding_completed_at')
+          .single()
+
+        if (syncError) {
+          console.error('Erro ao sincronizar status de onboarding:', syncError)
+        }
+
+        profileRecord = syncedProfile || {
+          id: profileRecord?.id,
+          user_id: user.id,
+          email: profileRecord?.email || user.email,
+          ...completionData,
+        }
+      }
+
+      setProfile(profileRecord)
+      setShowOnboarding(!profileRecord?.onboarding_completed)
+    } catch (error) {
+      console.error('Erro ao verificar status de onboarding:', error)
+      setProfile(null)
+      setShowOnboarding(true)
+    } finally {
+      setOnboardingLoading(false)
+    }
+  }
+
+  const completeOnboarding = async () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('pulsewatch_onboarding_completed', 'true')
+    }
+
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        setShowOnboarding(false)
+        return
+      }
+
+      const completionData = {
+        onboarding_completed: true,
+        onboarding_completed_at: new Date().toISOString(),
+      }
+
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .upsert(
+          {
+            id: profile?.id,
+            user_id: user.id,
+            email: profile?.email || user.email,
+            ...completionData,
+          },
+          { onConflict: 'user_id' }
+        )
+        .select('id, user_id, email, onboarding_completed, onboarding_completed_at')
+        .single()
+
+      if (error) {
+        console.error('Erro ao atualizar status de onboarding:', error)
+      }
+
+      setProfile(
+        data || {
+          ...(profile || {}),
+          user_id: user.id,
+          email: profile?.email || user.email,
+          ...completionData,
+        }
+      )
+      setShowOnboarding(false)
+    } catch (error) {
+      console.error('Erro ao completar onboarding:', error)
+      setShowOnboarding(false)
+    }
+  }
+
+  const onboardingSteps = [
+    {
+      title: '1. Cadastre sua primeira loja',
+      description:
+        'Clique em “Adicionar Loja”, informe o domínio e deixe que detectemos a plataforma automaticamente. Você também pode selecionar manualmente.',
+    },
+    {
+      title: '2. Configure as credenciais',
+      description:
+        'Preencha os tokens/chaves de API para habilitar a sincronização (Shopify, WooCommerce, Nuvemshop, Tray ou VTEX).',
+    },
+    {
+      title: '3. Ative o monitoramento',
+      description:
+        'Depois de salvar, a loja entra em “Verificando…”. Assim que o cron rodar, você verá produtos e alertas em tempo real.',
+    },
+    {
+      title: '4. Revise os alertas',
+      description:
+        'Use a aba “Alertas” para ajustar regras (estoque baixo, loja offline etc.) e garantir que as notificações cheguem por e-mail/Telegram.',
+    },
+  ]
+
+  const currentOnboarding = onboardingSteps[onboardingStep]
 
   const loadStores = async () => {
     const supabase = createClient()
@@ -359,6 +532,50 @@ export default function StoresPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {showOnboarding && currentOnboarding && (
+          <div className="border border-primary/40 bg-primary/5 rounded-xl p-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 opacity-10 text-primary text-7xl font-black pr-4 pt-2">
+              PW
+            </div>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center">
+              <div className="flex-1">
+                <p className="text-sm uppercase tracking-[0.2em] text-primary font-semibold mb-1">
+                  Onboarding PulseWatch
+                </p>
+                <h2 className="text-2xl font-bold mb-1">{currentOnboarding.title}</h2>
+                <p className="text-muted-foreground">{currentOnboarding.description}</p>
+                <div className="flex items-center gap-2 mt-4">
+                  {onboardingSteps.map((_, index) => (
+                    <div
+                      key={index}
+                      className={`h-1.5 rounded-full transition-all ${
+                        index <= onboardingStep ? 'w-8 bg-primary' : 'w-4 bg-primary/30'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  disabled={onboardingStep === 0}
+                  onClick={() => setOnboardingStep((prev) => Math.max(prev - 1, 0))}
+                >
+                  Passo anterior
+                </Button>
+                {onboardingStep < onboardingSteps.length - 1 ? (
+                  <Button onClick={() => setOnboardingStep((prev) => Math.min(prev + 1, onboardingSteps.length - 1))}>
+                    Próximo passo
+                  </Button>
+                ) : (
+                  <Button onClick={completeOnboarding} className="bg-green-600 hover:bg-green-700">
+                    Começar agora
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Lojas</h1>

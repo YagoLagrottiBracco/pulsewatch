@@ -24,10 +24,18 @@ export default function AlertsPage() {
   const [currentRuleId, setCurrentRuleId] = useState<string | null>(null)
   const [loadingConfig, setLoadingConfig] = useState(true)
   const [savingConfig, setSavingConfig] = useState(false)
+  const [inactivityConfig, setInactivityConfig] = useState({
+    daysWithoutSync: 7,
+    enableInactivityAlerts: true,
+  })
+  const [inactivityRuleId, setInactivityRuleId] = useState<string | null>(null)
+  const [loadingInactivity, setLoadingInactivity] = useState(true)
+  const [savingInactivity, setSavingInactivity] = useState(false)
 
   useEffect(() => {
     loadAlerts()
-    loadAlertRules()
+    loadStockAlertRules()
+    loadInactivityRules()
   }, [])
 
   const loadAlerts = async () => {
@@ -45,7 +53,56 @@ export default function AlertsPage() {
     setLoading(false)
   }
 
-  const loadAlertRules = async () => {
+  const loadInactivityRules = async () => {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      setLoadingInactivity(false)
+      return
+    }
+
+    const { data, error } = await supabase
+      .from('alert_rules')
+      .select('id, store_id, type, condition, is_active')
+      .eq('user_id', user.id)
+      .eq('type', 'PRODUCT_INACTIVE')
+      .eq('is_active', true)
+
+    if (error) {
+      console.error('Erro ao carregar regras de inatividade:', error)
+      setLoadingInactivity(false)
+      return
+    }
+
+    if (!data || data.length === 0) {
+      setLoadingInactivity(false)
+      return
+    }
+
+    const rule = data.find((r: any) => !r.store_id) || data[0]
+
+    if (rule && rule.condition) {
+      const condition: any = rule.condition
+
+      setInactivityConfig({
+        daysWithoutSync:
+          typeof condition.daysWithoutSync === 'number' && condition.daysWithoutSync > 0
+            ? condition.daysWithoutSync
+            : 7,
+        enableInactivityAlerts:
+          typeof condition.enableInactivityAlerts === 'boolean'
+            ? condition.enableInactivityAlerts
+            : true,
+      })
+
+      setInactivityRuleId(rule.id)
+    }
+
+    setLoadingInactivity(false)
+  }
+
+  const loadStockAlertRules = async () => {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -152,6 +209,57 @@ export default function AlertsPage() {
       }
     } finally {
       setSavingConfig(false)
+    }
+  }
+
+  const saveInactivityConfig = async () => {
+    setSavingInactivity(true)
+
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        setSavingInactivity(false)
+        return
+      }
+
+      const condition = {
+        daysWithoutSync: Number(inactivityConfig.daysWithoutSync) || 1,
+        enableInactivityAlerts: inactivityConfig.enableInactivityAlerts,
+      }
+
+      if (inactivityRuleId) {
+        const { error } = await supabase
+          .from('alert_rules')
+          .update({ condition })
+          .eq('id', inactivityRuleId)
+
+        if (error) {
+          console.error('Erro ao salvar regra de inatividade:', error)
+        }
+      } else {
+        const { data, error } = await supabase
+          .from('alert_rules')
+          .insert({
+            user_id: user.id,
+            store_id: null,
+            name: 'Regra global de inatividade',
+            type: 'PRODUCT_INACTIVE',
+            condition,
+            is_active: true,
+          })
+          .select('id')
+          .single()
+
+        if (error) {
+          console.error('Erro ao criar regra de inatividade:', error)
+        } else if (data) {
+          setInactivityRuleId(data.id)
+        }
+      }
+    } finally {
+      setSavingInactivity(false)
     }
   }
 
@@ -335,6 +443,65 @@ export default function AlertsPage() {
                 <div className="flex justify-end">
                   <Button onClick={saveStockConfig} disabled={savingConfig}>
                     {savingConfig ? 'Salvando...' : 'Salvar regras de estoque'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Regras de Inatividade</CardTitle>
+            <CardDescription>
+              Dispare alertas quando um produto ficar muito tempo sem sincronizar (dados antigos ou integrações quebradas).
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingInactivity ? (
+              <p className="text-sm text-muted-foreground">Carregando regras...</p>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="daysWithoutSync">Considerar inativo após</Label>
+                    <Input
+                      id="daysWithoutSync"
+                      type="number"
+                      min={1}
+                      value={inactivityConfig.daysWithoutSync}
+                      onChange={(e) =>
+                        setInactivityConfig({
+                          ...inactivityConfig,
+                          daysWithoutSync: Number(e.target.value) || 1,
+                        })
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Número de dias sem sincronização para que o produto seja marcado como inativo.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between border rounded-md p-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="enableInactivityAlerts">Alertar produtos inativos</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Desative se não quiser receber alertas de produtos sem atualização.
+                    </p>
+                  </div>
+                  <Switch
+                    id="enableInactivityAlerts"
+                    checked={inactivityConfig.enableInactivityAlerts}
+                    onCheckedChange={(value: boolean) =>
+                      setInactivityConfig({ ...inactivityConfig, enableInactivityAlerts: value })
+                    }
+                  />
+                </div>
+
+                <div className="flex justify-end">
+                  <Button onClick={saveInactivityConfig} disabled={savingInactivity}>
+                    {savingInactivity ? 'Salvando...' : 'Salvar regras de inatividade'}
                   </Button>
                 </div>
               </div>

@@ -83,10 +83,13 @@ export async function GET(request: NextRequest) {
         // Sincronizar produtos se a loja estiver online e tiver integração configurada
         let productsSynced = 0
         let syncError = null
+        let inactivityAlerts = 0
+
+        const stockAlertConfig = await getStockAlertConfigForStore(supabase, store)
+        const inactivityConfig = await getInactivityAlertConfigForStore(supabase, store)
+
         if (isOnline && store.platform_config) {
           try {
-            const stockAlertConfig = await getStockAlertConfigForStore(supabase, store)
-
             if (store.platform === 'shopify') {
               productsSynced = await syncShopifyProducts(supabase, store, stockAlertConfig)
             } else if (store.platform === 'woocommerce') {
@@ -104,6 +107,12 @@ export async function GET(request: NextRequest) {
           }
         }
 
+        try {
+          inactivityAlerts = await checkInactiveProducts(supabase, store, inactivityConfig)
+        } catch (error) {
+          console.error(`Erro ao verificar produtos inativos da loja ${store.name}:`, error)
+        }
+
         results.push({
           store: store.name,
           domain: store.domain,
@@ -115,6 +124,7 @@ export async function GET(request: NextRequest) {
           changed: store.status !== newStatus,
           productsSynced,
           syncError,
+          inactivityAlerts,
           hasPlatformConfig: !!store.platform_config,
           platform: store.platform
         })
@@ -155,6 +165,11 @@ type StockAlertConfig = {
   enableLowStock: boolean
   enableOutOfStock: boolean
   enableBackInStock: boolean
+}
+
+type InactivityAlertConfig = {
+  daysWithoutSync: number
+  enableInactivityAlerts: boolean
 }
 
 async function getStockAlertConfigForStore(supabase: any, store: any): Promise<StockAlertConfig> {
@@ -211,6 +226,51 @@ async function getStockAlertConfigForStore(supabase: any, store: any): Promise<S
     }
   } catch (error) {
     console.error('Erro ao carregar regras de estoque para loja', store.id, error)
+    return defaultConfig
+  }
+}
+
+async function getInactivityAlertConfigForStore(
+  supabase: any,
+  store: any
+): Promise<InactivityAlertConfig> {
+  const defaultConfig: InactivityAlertConfig = {
+    daysWithoutSync: 7,
+    enableInactivityAlerts: true,
+  }
+
+  try {
+    const { data: rules } = await supabase
+      .from('alert_rules')
+      .select('id, store_id, type, condition')
+      .eq('user_id', store.user_id)
+      .eq('is_active', true)
+      .eq('type', 'PRODUCT_INACTIVE')
+
+    if (!rules || rules.length === 0) {
+      return defaultConfig
+    }
+
+    const storeRule = rules.find((r: any) => r.store_id === store.id)
+    const rule = storeRule || rules.find((r: any) => !r.store_id) || rules[0]
+    const condition = (rule && rule.condition) || {}
+
+    const daysWithoutSync =
+      typeof condition.daysWithoutSync === 'number' && condition.daysWithoutSync > 0
+        ? condition.daysWithoutSync
+        : defaultConfig.daysWithoutSync
+
+    const enableInactivityAlerts =
+      typeof condition.enableInactivityAlerts === 'boolean'
+        ? condition.enableInactivityAlerts
+        : defaultConfig.enableInactivityAlerts
+
+    return {
+      daysWithoutSync,
+      enableInactivityAlerts,
+    }
+  } catch (error) {
+    console.error('Erro ao carregar regras de inatividade para loja', store.id, error)
     return defaultConfig
   }
 }
@@ -901,6 +961,65 @@ async function syncVtexProducts(
     console.error('Erro ao sincronizar produtos VTEX:', error)
     throw error
   }
+}
+
+async function checkInactiveProducts(
+  supabase: any,
+  store: any,
+  config: InactivityAlertConfig
+): Promise<number> {
+  if (!config.enableInactivityAlerts) {
+    return 0
+  }
+
+  const thresholdDate = new Date()
+  thresholdDate.setDate(thresholdDate.getDate() - config.daysWithoutSync)
+  const thresholdIso = thresholdDate.toISOString()
+
+  const { data: products, error } = await supabase
+    .from('products')
+    .select('id, external_id, name, sku, product_url, last_synced')
+    .eq('store_id', store.id)
+    .or(`last_synced.lte.${thresholdIso},last_synced.is.null`)
+
+  if (error || !products) {
+    console.error('Erro ao buscar produtos inativos:', error)
+    return 0
+  }
+
+  let alertsCreated = 0
+  const recentWindow = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+
+  for (const product of products) {
+    const { data: existingAlert } = await supabase
+      .from('alerts')
+      .select('id')
+      .eq('store_id', store.id)
+      .eq('type', 'PRODUTO_INATIVO')
+      .gt('created_at', recentWindow)
+      .contains('metadata', { product_id: product.external_id || product.id })
+      .maybeSingle()
+
+    if (existingAlert) {
+      continue
+    }
+
+    await createAlertWithNotification(supabase, store, {
+      type: 'PRODUTO_INATIVO',
+      severity: 'medium',
+      title: 'Produto sem atualização recente',
+      message: `O produto "${product.name}" não recebe atualização há mais de ${config.daysWithoutSync} dias.`,
+      metadata: {
+        product_id: product.external_id || product.id,
+        last_synced: product.last_synced,
+        product_url: product.product_url,
+      },
+    })
+
+    alertsCreated++
+  }
+
+  return alertsCreated
 }
 
 async function checkStoreStatus(url: string): Promise<CheckResult> {
