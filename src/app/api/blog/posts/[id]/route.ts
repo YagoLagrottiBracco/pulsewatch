@@ -71,6 +71,7 @@ export async function PUT(
       seo_description,
       seo_og_image,
       seo_keywords,
+      is_page,
     } = body
 
     const updateData: any = {
@@ -85,6 +86,7 @@ export async function PUT(
       seo_description,
       seo_og_image,
       seo_keywords,
+      is_page,
     }
 
     // Set published_at if publishing for first time

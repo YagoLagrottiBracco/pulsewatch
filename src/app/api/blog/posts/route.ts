@@ -85,6 +85,7 @@ export async function POST(request: NextRequest) {
       seo_description,
       seo_og_image,
       seo_keywords,
+      is_page = false,
     } = body
 
     // Create post
@@ -104,6 +105,7 @@ export async function POST(request: NextRequest) {
         seo_description,
         seo_og_image,
         seo_keywords,
+        is_page,
       })
       .select()
       .single()
