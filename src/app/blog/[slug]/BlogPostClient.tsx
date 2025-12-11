@@ -4,7 +4,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Calendar, Eye, ArrowLeft, Share2, Bell } from 'lucide-react'
+import { Calendar, Eye, ArrowLeft, Share2 } from 'lucide-react'
+import { LogoIcon } from '@/components/ui/logo'
 
 interface BlogPostClientProps {
   post: any
@@ -39,8 +40,8 @@ export default function BlogPostClient({ post }: BlogPostClientProps) {
         <div className="container mx-auto px-4 py-4 max-w-6xl">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
-              <Bell className="h-6 w-6 text-primary" />
-              <span className="text-2xl font-bold">PulseWatch</span>
+              <LogoIcon className="h-14 w-14 text-primary" />
+              <span className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">PulseWatch</span>
             </Link>
             <nav className="flex gap-6">
               <Link href="/blog" className="text-sm font-medium text-primary">

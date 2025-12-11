@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Bell } from 'lucide-react'
+import { LogoIcon } from '@/components/ui/logo'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -60,8 +60,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-muted/50 p-4">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-2 mb-8">
-          <Bell className="h-8 w-8 text-primary" />
-          <span className="text-2xl font-bold">PulseWatch</span>
+          <LogoIcon className="h-20 w-20 text-primary" />
+          <span className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">PulseWatch</span>
         </div>
 
         <Card>

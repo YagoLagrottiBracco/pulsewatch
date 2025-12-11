@@ -5,7 +5,8 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Bell, Store, Package, AlertTriangle, Settings, LogOut, Menu } from 'lucide-react'
+import { LogoIcon } from '@/components/ui/logo'
+import { Store, Package, AlertTriangle, Settings, LogOut, Menu, LayoutDashboard } from 'lucide-react'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -113,7 +114,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <Bell className="h-12 w-12 text-primary mx-auto mb-4 animate-pulse" />
+          <LogoIcon className="h-24 w-24 text-primary mx-auto mb-4 animate-pulse" />
           <p className="text-muted-foreground">Carregando...</p>
         </div>
       </div>
@@ -121,7 +122,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Bell },
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Lojas', href: '/stores', icon: Store },
     { name: 'Produtos', href: '/products', icon: Package },
     { name: 'Alertas', href: '/alerts', icon: AlertTriangle },
@@ -138,7 +139,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       >
         <div className="p-4 border-b flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Bell className="h-6 w-6 text-primary" />
+            <LogoIcon className="h-14 w-14 text-primary" />
             {sidebarOpen && <span className="font-bold text-lg">PulseWatch</span>}
           </div>
           <Button

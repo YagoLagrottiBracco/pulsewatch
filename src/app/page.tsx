@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Navbar } from '@/components/navbar'
+import { LogoIcon } from '@/components/ui/logo'
 import { 
-  Bell, 
   ShoppingCart, 
   TrendingUp, 
   Zap, 
@@ -60,46 +61,9 @@ export default function LandingPage() {
         <div className="absolute bottom-1/4 left-1/3 w-96 h-96 bg-blue-300/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-pulse animation-delay-4000" />
       </div>
 
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 shadow-sm">
-        <div className="container flex h-20 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="relative">
-              <Bell className="h-7 w-7 text-primary group-hover:scale-110 transition-transform" />
-              <span className="absolute top-0 right-0 w-2 h-2 bg-green-500 rounded-full animate-ping" />
-            </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">PulseWatch</span>
-          </Link>
-          <nav className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
-              Recursos
-            </a>
-            <a href="#platforms" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
-              Plataformas
-            </a>
-            <a href="#pricing" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
-              Preços
-            </a>
-            <a href="#faq" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
-              FAQ
-            </a>
-            <Link href="/blog" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
-              Blog
-            </Link>
-            <Link href="/auth/login">
-              <Button variant="ghost" className="hover:bg-primary/10">Entrar</Button>
-            </Link>
-            <Link href="/auth/signup">
-              <Button className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 shadow-lg hover:shadow-xl transition-all">
-                <Sparkles className="h-4 w-4 mr-2" />
-                Começar Grátis
-              </Button>
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <Navbar />
 
-      <main className="flex-1">
+      <main className="flex-1 pt-24">
         {/* Hero Section */}
         <section className="relative container py-32 md:py-40">
           <div className="mx-auto flex max-w-6xl flex-col items-center gap-12 text-center">
@@ -1021,8 +985,7 @@ export default function LandingPage() {
             <div className="md:col-span-4">
               <Link href="/" className="flex items-center gap-2 mb-4 group">
                 <div className="relative">
-                  <Bell className="h-7 w-7 text-primary group-hover:scale-110 transition-transform" />
-                  <span className="absolute top-0 right-0 w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  <LogoIcon className="h-16 w-16 text-primary group-hover:scale-110 transition-transform" />
                 </div>
                 <span className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">PulseWatch</span>
               </Link>

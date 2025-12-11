@@ -4,8 +4,9 @@ import { useMemo } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Calendar, Eye, ArrowRight, Bell } from 'lucide-react'
+import { Calendar, Eye, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { LogoIcon } from '@/components/ui/logo'
 
 interface BlogPageClientProps {
   initialPosts: any[]
@@ -20,8 +21,8 @@ export default function BlogPageClient({ initialPosts }: BlogPageClientProps) {
         <div className="container mx-auto px-4 py-4 max-w-6xl">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
-              <Bell className="h-6 w-6 text-primary" />
-              <span className="text-2xl font-bold">PulseWatch</span>
+              <LogoIcon className="h-14 w-14 text-primary" />
+              <span className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">PulseWatch</span>
             </Link>
             <nav className="flex gap-6">
               <Link href="/blog" className="text-sm font-medium text-primary">
