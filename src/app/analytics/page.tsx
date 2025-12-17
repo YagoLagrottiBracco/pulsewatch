@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/dashboard-layout'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { TrendingUp, TrendingDown, Package, DollarSign, AlertCircle, Calendar } from 'lucide-react'
+import { TrendingUp, Package, DollarSign, AlertCircle } from 'lucide-react'
 
 interface AlertStats {
   date: string
@@ -101,7 +101,7 @@ export default function AnalyticsPage() {
       .in('store_id', storeIds)
 
     products?.forEach(product => {
-      const storeName = product.stores?.name || 'Unknown'
+      const storeName = (product.stores as any)?.name || 'Unknown'
       if (alertsByStore[storeName]) {
         alertsByStore[storeName].products++
       }
@@ -166,7 +166,7 @@ export default function AnalyticsPage() {
               Análise detalhada dos seus alertas e métricas
             </p>
           </div>
-          <Tabs value={timeRange} onValueChange={(v) => setTimeRange(v as any)}>
+          <Tabs value={timeRange} onValueChange={(v: string) => setTimeRange(v as any)}>
             <TabsList>
               <TabsTrigger value="7d">7 dias</TabsTrigger>
               <TabsTrigger value="30d">30 dias</TabsTrigger>
@@ -275,7 +275,7 @@ export default function AnalyticsPage() {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      label={({ name, percent }: any) => `${name}: ${(percent * 100).toFixed(0)}%`}
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
