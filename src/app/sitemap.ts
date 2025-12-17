@@ -5,6 +5,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'https:/
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = await createClient()
+  const now = new Date().toISOString()
 
   // 1. Páginas estáticas (internas)
   const staticPages: MetadataRoute.Sitemap = [
@@ -28,6 +29,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .select('slug, updated_at, published_at')
     .eq('status', 'published')
     .eq('is_page', true)
+    .or(`publish_at.is.null,publish_at.lte.${now}`)
+    .or(`unpublish_at.is.null,unpublish_at.gt.${now}`)
 
   const ctaPagesSitemap: MetadataRoute.Sitemap = (ctaPages || []).map((page) => ({
     url: `${BASE_URL}/${page.slug}`,
@@ -42,6 +45,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .select('slug, updated_at, published_at')
     .eq('status', 'published')
     .or('is_page.eq.false,is_page.is.null')
+    .or(`publish_at.is.null,publish_at.lte.${now}`)
+    .or(`unpublish_at.is.null,unpublish_at.gt.${now}`)
 
   const blogPostsSitemap: MetadataRoute.Sitemap = (blogPosts || []).map((post) => ({
     url: `${BASE_URL}/blog/${post.slug}`,

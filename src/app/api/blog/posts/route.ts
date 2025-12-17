@@ -30,9 +30,13 @@ export async function GET(request: NextRequest) {
       `)
       .order('created_at', { ascending: false })
 
-    // If not admin, only show published posts
+    // If not admin, only show published posts with proper scheduling
     if (!isAdmin) {
-      query = query.eq('status', 'published')
+      const now = new Date().toISOString()
+      query = query
+        .eq('status', 'published')
+        .or(`publish_at.is.null,publish_at.lte.${now}`)
+        .or(`unpublish_at.is.null,unpublish_at.gt.${now}`)
     } else if (status && status !== 'all') {
       query = query.eq('status', status)
     }
@@ -86,27 +90,37 @@ export async function POST(request: NextRequest) {
       seo_og_image,
       seo_keywords,
       is_page = false,
+      publish_at,
+      unpublish_at,
     } = body
 
     // Create post
+    const insertData: any = {
+      title,
+      slug,
+      excerpt,
+      content,
+      cover_image,
+      author_id: adminData.id,
+      status: status || 'draft',
+      tags: tags || [],
+      seo_title,
+      seo_description,
+      seo_og_image,
+      seo_keywords,
+      is_page,
+      publish_at: publish_at || null,
+      unpublish_at: unpublish_at || null,
+    }
+
+    // Set published_at based on publish_at or current time
+    if (status === 'published') {
+      insertData.published_at = publish_at || new Date().toISOString()
+    }
+
     const { data, error } = await supabase
       .from('blog_posts')
-      .insert({
-        title,
-        slug,
-        excerpt,
-        content,
-        cover_image,
-        author_id: adminData.id,
-        status: status || 'draft',
-        tags: tags || [],
-        published_at: status === 'published' ? new Date().toISOString() : null,
-        seo_title,
-        seo_description,
-        seo_og_image,
-        seo_keywords,
-        is_page,
-      })
+      .insert(insertData)
       .select()
       .single()
 

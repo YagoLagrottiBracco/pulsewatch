@@ -11,12 +11,15 @@ type Props = {
 
 async function getPostBySlug(slug: string) {
   const supabase = await createClient()
+  const now = new Date().toISOString()
 
   const { data } = await supabase
     .from('blog_posts')
     .select('*')
     .eq('slug', slug)
     .eq('status', 'published')
+    .or(`publish_at.is.null,publish_at.lte.${now}`)
+    .or(`unpublish_at.is.null,unpublish_at.gt.${now}`)
     .single()
 
   return data as any | null

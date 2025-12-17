@@ -34,6 +34,8 @@ export default function BlogEditPage() {
     seo_og_image: '',
     seo_keywords: '',
     is_page: false,
+    publish_at: '',
+    unpublish_at: '',
   })
 
   useEffect(() => {
@@ -85,6 +87,8 @@ export default function BlogEditPage() {
         seo_og_image: data.seo_og_image || '',
         seo_keywords: data.seo_keywords || '',
         is_page: !!data.is_page,
+        publish_at: data.publish_at ? new Date(data.publish_at).toISOString().slice(0, 16) : '',
+        unpublish_at: data.unpublish_at ? new Date(data.unpublish_at).toISOString().slice(0, 16) : '',
       })
     } catch (error) {
       console.error('Error loading post:', error)
@@ -272,6 +276,37 @@ export default function BlogEditPage() {
               }
               placeholder="react, typescript, tutorial"
             />
+          </div>
+
+          {/* Scheduling */}
+          <div className="space-y-4 border-t pt-4">
+            <h3 className="text-sm font-medium text-muted-foreground">Agendamento</h3>
+
+            <div className="space-y-2">
+              <Label htmlFor="publish_at">Data/Hora de Publicação</Label>
+              <Input
+                id="publish_at"
+                type="datetime-local"
+                value={formData.publish_at}
+                onChange={(e) => setFormData({ ...formData, publish_at: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">
+                Deixe em branco para publicar imediatamente ao salvar como "Publicado"
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="unpublish_at">Data/Hora de Despublicação</Label>
+              <Input
+                id="unpublish_at"
+                type="datetime-local"
+                value={formData.unpublish_at}
+                onChange={(e) => setFormData({ ...formData, unpublish_at: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">
+                Deixe em branco para manter o post publicado indefinidamente
+              </p>
+            </div>
           </div>
 
           {/* SEO */}

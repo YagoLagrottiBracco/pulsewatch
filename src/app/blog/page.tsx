@@ -8,10 +8,14 @@ const BLOG_DESCRIPTION =
 
 async function getPublishedPosts() {
   const supabase = await createClient()
+  const now = new Date().toISOString()
+  
   const { data } = await supabase
     .from('blog_posts')
     .select('*')
     .eq('status', 'published')
+    .or(`publish_at.is.null,publish_at.lte.${now}`)
+    .or(`unpublish_at.is.null,unpublish_at.gt.${now}`)
     .order('published_at', { ascending: false })
 
   return data || []

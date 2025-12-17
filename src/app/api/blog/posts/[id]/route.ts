@@ -72,6 +72,8 @@ export async function PUT(
       seo_og_image,
       seo_keywords,
       is_page,
+      publish_at,
+      unpublish_at,
     } = body
 
     const updateData: any = {
@@ -87,6 +89,8 @@ export async function PUT(
       seo_og_image,
       seo_keywords,
       is_page,
+      publish_at: publish_at || null,
+      unpublish_at: unpublish_at || null,
     }
 
     // Set published_at if publishing for first time
@@ -98,7 +102,7 @@ export async function PUT(
         .single()
 
       if (!existingPost?.published_at) {
-        updateData.published_at = new Date().toISOString()
+        updateData.published_at = publish_at || new Date().toISOString()
       }
     }
 

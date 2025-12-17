@@ -11,6 +11,7 @@ type Props = {
 
 async function getPageBySlug(slug: string) {
   const supabase = await createClient()
+  const now = new Date().toISOString()
 
   const { data } = await supabase
     .from('blog_posts')
@@ -18,6 +19,8 @@ async function getPageBySlug(slug: string) {
     .eq('slug', slug)
     .eq('status', 'published')
     .eq('is_page', true)
+    .or(`publish_at.is.null,publish_at.lte.${now}`)
+    .or(`unpublish_at.is.null,unpublish_at.gt.${now}`)
     .single()
 
   return data as any | null
