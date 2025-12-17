@@ -254,6 +254,7 @@ export default function AdminUserDetailPage() {
                     >
                       <option value="free">Free</option>
                       <option value="pro">Pro</option>
+                      <option value="ultimate">Ultimate</option>
                     </select>
                   </div>
 
@@ -309,7 +310,15 @@ export default function AdminUserDetailPage() {
                     <p className="text-sm text-gray-500 flex items-center gap-1">
                       <CreditCard className="h-3 w-3" /> Plano
                     </p>
-                    <Badge className={user.subscription_tier === 'pro' ? 'bg-purple-600' : ''}>
+                    <Badge
+                      className={
+                        user.subscription_tier === 'pro'
+                          ? 'bg-purple-600'
+                          : user.subscription_tier === 'ultimate'
+                            ? 'bg-slate-700'
+                            : ''
+                      }
+                    >
                       {user.subscription_tier?.toUpperCase() || 'FREE'}
                     </Badge>
                   </div>

@@ -25,7 +25,9 @@ import {
   Globe,
   Lock,
   CreditCard,
-  Timer
+  Timer,
+  Bot,
+  Phone
 } from 'lucide-react'
 import { Metadata } from 'next'
 
@@ -518,7 +520,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="grid gap-8 md:grid-cols-2 max-w-5xl mx-auto">
+            <div className="grid gap-8 md:grid-cols-3 max-w-6xl mx-auto">
               {/* Free Plan */}
               <Card className="relative group hover:shadow-2xl transition-all duration-300 border-2">
                 <CardHeader className="pb-8">
@@ -681,8 +683,8 @@ export default function LandingPage() {
                         <CheckCircle className="h-4 w-4 text-primary" />
                       </div>
                       <div>
-                        <span className="font-semibold text-base">Email + Telegram + SMS</span>
-                        <p className="text-sm text-muted-foreground">Múltiplos canais de notificação em tempo real</p>
+                        <span className="font-semibold text-base">Email + Telegram</span>
+                        <p className="text-sm text-muted-foreground">Notificações em tempo real nos canais disponíveis</p>
                       </div>
                     </li>
                     <li className="flex items-start gap-3">
@@ -699,8 +701,8 @@ export default function LandingPage() {
                         <CheckCircle className="h-4 w-4 text-primary" />
                       </div>
                       <div>
-                        <span className="font-semibold text-base">Dashboard Pro com IA</span>
-                        <p className="text-sm text-muted-foreground">Insights inteligentes e previsões de vendas</p>
+                        <span className="font-semibold text-base">Dashboard Pro</span>
+                        <p className="text-sm text-muted-foreground">Visão avançada do desempenho da sua loja</p>
                       </div>
                     </li>
                     <li className="flex items-start gap-3">
@@ -729,6 +731,84 @@ export default function LandingPage() {
                     </Link>
                     <p className="text-xs text-center text-muted-foreground">
                       ✨ 7 dias grátis • 🚫 Sem fidelidade • ✅ Cancele a qualquer momento
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="relative group border-2 border-dashed bg-gradient-to-br from-muted/30 via-background to-muted/10">
+                <div className="absolute -top-5 left-1/2 -translate-x-1/2 z-10">
+                  <Badge className="bg-gradient-to-r from-muted-foreground to-slate-500 text-white px-6 py-2 text-sm font-bold shadow-xl">
+                    <Clock className="h-4 w-4 mr-1" />
+                    EM BREVE
+                  </Badge>
+                </div>
+                <CardHeader className="pb-8 pt-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <CardTitle className="text-3xl font-black">Ultimate</CardTitle>
+                    <Badge variant="secondary" className="text-xs">
+                      <Bot className="h-3 w-3 mr-1" />
+                      IA + Automações
+                    </Badge>
+                  </div>
+                  <CardDescription className="text-base">
+                    Recursos avançados que ainda não foram lançados
+                  </CardDescription>
+                  <div className="mt-6">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-5xl font-black text-muted-foreground">Em breve</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-3">
+                      Lançaremos este plano assim que os recursos estiverem prontos
+                    </p>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <ul className="space-y-4">
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Bot className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <span className="font-semibold text-base">Insights com IA</span>
+                        <p className="text-sm text-muted-foreground">em breve</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <span className="font-semibold text-base">Alertas via WhatsApp</span>
+                        <p className="text-sm text-muted-foreground">em breve</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <span className="font-semibold text-base">Alertas via SMS</span>
+                        <p className="text-sm text-muted-foreground">em breve</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Sparkles className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <span className="font-semibold text-base">Tudo que ainda não foi implementado</span>
+                        <p className="text-sm text-muted-foreground">em breve</p>
+                      </div>
+                    </li>
+                  </ul>
+
+                  <div className="pt-6 border-t space-y-3">
+                    <Button disabled className="w-full h-12 text-base font-bold" size="lg">
+                      Em breve
+                    </Button>
+                    <p className="text-xs text-center text-muted-foreground">
+                      ⏳ Disponível em uma próxima atualização
                     </p>
                   </div>
                 </CardContent>
@@ -861,7 +941,7 @@ export default function LandingPage() {
                   <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
                 </summary>
                 <div className="mt-4 text-muted-foreground leading-relaxed">
-                  <p>No plano gratuito, você recebe alertas por <strong>email</strong>. No plano Premium, além do email, você pode configurar alertas via <strong>Telegram</strong> e <strong>SMS</strong> para ser notificado instantaneamente onde você estiver!</p>
+                  <p>No plano gratuito, você recebe alertas por <strong>email</strong>. No plano Premium, além do email, você pode configurar alertas via <strong>Telegram</strong>. Canais como <strong>SMS</strong> e <strong>WhatsApp</strong> ficam disponíveis no plano Ultimate <strong>em breve</strong>.</p>
                 </div>
               </details>
 

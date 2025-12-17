@@ -5,8 +5,10 @@ import DashboardLayout from '@/components/dashboard-layout'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Package, Search, ExternalLink } from 'lucide-react'
+import { Package, Search, ExternalLink, Download } from 'lucide-react'
+import { exportToCSV, formatProductForExport } from '@/lib/export-utils'
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<any[]>([])
@@ -103,6 +105,18 @@ export default function ProductsPage() {
                   className="pl-9"
                 />
               </div>
+              {filteredProducts.length > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const exportData = filteredProducts.map(formatProductForExport)
+                    exportToCSV(exportData, 'produtos-pulsewatch')
+                  }}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar CSV
+                </Button>
+              )}
               <select
                 className="px-3 py-2 border rounded-md bg-background"
                 value={selectedStore}

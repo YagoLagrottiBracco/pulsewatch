@@ -6,11 +6,17 @@ PulseWatch é uma solução profissional que monitora lojas de e-commerce (Shopi
 
 ## 🚀 Features
 
-- ✅ **Detecção Automática de Plataforma** - Identifica automaticamente Shopify, WooCommerce ou Nuvemshop
-- ✅ **Monitoramento em Tempo Real** - Verifica status da loja, estoque e vendas a cada 10 minutos
-- ✅ **Alertas Multi-Canal** - Email (SMTP nativo Supabase) e Telegram
-- ✅ **Dashboard Completo** - Visualize produtos, pedidos, alertas e configurações
-- ✅ **Landing Page SEO-Optimizada** - LP profissional com Lighthouse SEO > 90
+### Core MVP (100% Completo)
+- ✅ **Dashboard Analytics** - Gráficos interativos com métricas em tempo real
+- ✅ **Detecção Automática de Plataforma** - Suporte para Shopify, WooCommerce, Nuvemshop, VTEX, Tray
+- ✅ **Monitoramento em Tempo Real** - Verifica status da loja, estoque e vendas
+- ✅ **Alertas Multi-Canal** - Email (SMTP) e Telegram
+- ✅ **Regras de Alerta Customizadas** - Crie alertas personalizados com condições específicas
+- ✅ **Exportação de Relatórios** - Exporte alertas e produtos para CSV
+- ✅ **Logs de Auditoria** - Histórico completo de ações na plataforma
+- ✅ **Customer Portal Stripe** - Gerenciamento completo de assinatura
+- ✅ **Admin Panel** - Gestão de usuários e blog CMS
+- ✅ **Landing Page SEO-Optimizada** - LP profissional com meta tags completas
 - ✅ **Autenticação Segura** - Supabase Auth com RLS
 
 ## 🛠️ Stack Tecnológica
@@ -45,12 +51,15 @@ npm run dev
 
 O projeto usa Supabase com as seguintes tabelas:
 
-- `user_profiles` - Perfis de usuário com configurações
-- `stores` - Lojas cadastradas
-- `products` - Produtos importados
+- `user_profiles` - Perfis de usuário com configurações e assinatura
+- `stores` - Lojas cadastradas (5 plataformas suportadas)
+- `products` - Produtos importados e sincronizados
 - `orders` - Pedidos monitorados
-- `alerts` - Alertas gerados
-- `alert_rules` - Regras de alertas personalizadas
+- `alerts` - Alertas gerados pelo sistema
+- `alert_rules` - Regras de alertas personalizadas por usuário
+- `admin_users` - Administradores do sistema
+- `blog_posts` - Sistema de blog CMS com SEO
+- `audit_logs` - Logs de auditoria de todas as ações
 - `leads` - Leads da landing page
 
 ## 🔐 Configuração

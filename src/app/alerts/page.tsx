@@ -6,15 +6,20 @@ import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AlertTriangle, CheckCircle, Mail, MessageSquare, Trash2 } from 'lucide-react'
+import { AlertTriangle, CheckCircle, Mail, MessageSquare, Trash2, Download } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { exportToCSV, formatAlertForExport } from '@/lib/export-utils'
+import { logAudit, AuditActions, EntityTypes } from '@/lib/audit-logger'
 
 export default function AlertsPage() {
   const [alerts, setAlerts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all')
+  const [stores, setStores] = useState<any[]>([])
+  const [selectedStoreId, setSelectedStoreId] = useState<string>('global')
+  const [loadingStoreRules, setLoadingStoreRules] = useState(false)
   const [stockConfig, setStockConfig] = useState({
     lowStockThreshold: 5,
     enableLowStock: true,
@@ -31,12 +36,106 @@ export default function AlertsPage() {
   const [inactivityRuleId, setInactivityRuleId] = useState<string | null>(null)
   const [loadingInactivity, setLoadingInactivity] = useState(true)
   const [savingInactivity, setSavingInactivity] = useState(false)
+  const [profile, setProfile] = useState<any | null>(null)
 
   useEffect(() => {
     loadAlerts()
+    loadUserAndStores()
     loadStockAlertRules()
     loadInactivityRules()
   }, [])
+
+  const loadUserAndStores = async () => {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return
+
+    const { data: profileData } = await supabase
+      .from('user_profiles')
+      .select('plan, subscription_tier')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    setProfile(profileData || null)
+
+    const { data: storesData } = await supabase
+      .from('stores')
+      .select('id, name, domain')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+
+    setStores(storesData || [])
+  }
+
+  const loadRulesForSelectedStore = async (storeId: string) => {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return
+
+    const normalizedStoreId = storeId === 'global' ? null : storeId
+    setLoadingStoreRules(true)
+
+    try {
+      const [stockRes, inactivityRes] = await Promise.all([
+        supabase
+          .from('alert_rules')
+          .select('id, store_id, type, condition, is_active')
+          .eq('user_id', user.id)
+          .eq('type', 'STOCK_LEVEL')
+          .eq('is_active', true)
+          .eq('store_id', normalizedStoreId)
+          .maybeSingle(),
+        supabase
+          .from('alert_rules')
+          .select('id, store_id, type, condition, is_active')
+          .eq('user_id', user.id)
+          .eq('type', 'PRODUCT_INACTIVE')
+          .eq('is_active', true)
+          .eq('store_id', normalizedStoreId)
+          .maybeSingle(),
+      ])
+
+      if (stockRes.data?.condition) {
+        const condition: any = stockRes.data.condition
+        setStockConfig({
+          lowStockThreshold:
+            typeof condition.lowStockThreshold === 'number' && condition.lowStockThreshold > 0
+              ? condition.lowStockThreshold
+              : 5,
+          enableLowStock:
+            typeof condition.enableLowStock === 'boolean' ? condition.enableLowStock : true,
+          enableOutOfStock:
+            typeof condition.enableOutOfStock === 'boolean' ? condition.enableOutOfStock : true,
+          enableBackInStock:
+            typeof condition.enableBackInStock === 'boolean' ? condition.enableBackInStock : true,
+        })
+        setCurrentRuleId(stockRes.data.id)
+      } else {
+        setCurrentRuleId(null)
+      }
+
+      if (inactivityRes.data?.condition) {
+        const condition: any = inactivityRes.data.condition
+        setInactivityConfig({
+          daysWithoutSync:
+            typeof condition.daysWithoutSync === 'number' && condition.daysWithoutSync > 0
+              ? condition.daysWithoutSync
+              : 7,
+          enableInactivityAlerts:
+            typeof condition.enableInactivityAlerts === 'boolean'
+              ? condition.enableInactivityAlerts
+              : true,
+        })
+        setInactivityRuleId(inactivityRes.data.id)
+      } else {
+        setInactivityRuleId(null)
+      }
+    } finally {
+      setLoadingStoreRules(false)
+    }
+  }
 
   const loadAlerts = async () => {
     const supabase = createClient()
@@ -178,6 +277,8 @@ export default function AlertsPage() {
         enableBackInStock: stockConfig.enableBackInStock,
       }
 
+      const storeId = selectedStoreId === 'global' ? null : selectedStoreId
+
       if (currentRuleId) {
         const { error } = await supabase
           .from('alert_rules')
@@ -192,7 +293,7 @@ export default function AlertsPage() {
           .from('alert_rules')
           .insert({
             user_id: user.id,
-            store_id: null,
+            store_id: storeId,
             name: 'Regra global de estoque',
             type: 'STOCK_LEVEL',
             condition,
@@ -229,6 +330,8 @@ export default function AlertsPage() {
         enableInactivityAlerts: inactivityConfig.enableInactivityAlerts,
       }
 
+      const storeId = selectedStoreId === 'global' ? null : selectedStoreId
+
       if (inactivityRuleId) {
         const { error } = await supabase
           .from('alert_rules')
@@ -243,7 +346,7 @@ export default function AlertsPage() {
           .from('alert_rules')
           .insert({
             user_id: user.id,
-            store_id: null,
+            store_id: storeId,
             name: 'Regra global de inatividade',
             type: 'PRODUCT_INACTIVE',
             condition,
@@ -294,10 +397,19 @@ export default function AlertsPage() {
   const deleteAlert = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir este alerta?')) return
 
+    const alert = alerts.find(a => a.id === id)
     const supabase = createClient()
     const { error } = await supabase.from('alerts').delete().eq('id', id)
 
     if (!error) {
+      if (alert) {
+        await logAudit({
+          action: AuditActions.ALERT_DELETED,
+          entity_type: EntityTypes.ALERT,
+          entity_id: id,
+          metadata: { title: alert.title, type: alert.type }
+        })
+      }
       loadAlerts()
     }
   }
@@ -356,6 +468,52 @@ export default function AlertsPage() {
             </Button>
           )}
         </div>
+
+        {stores.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Escopo das regras</CardTitle>
+              <CardDescription>
+                No Premium, você pode definir regras globais e também sobrescrever por loja.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="rules_scope">Aplicar regras em</Label>
+                  <select
+                    id="rules_scope"
+                    value={selectedStoreId}
+                    onChange={async (e) => {
+                      const next = e.target.value
+                      setSelectedStoreId(next)
+
+                      const isPro = profile?.plan === 'pro' || profile?.subscription_tier === 'pro'
+                      if (next !== 'global' && !isPro) {
+                        alert('Regras por loja estão disponíveis apenas no Premium.')
+                        setSelectedStoreId('global')
+                        return
+                      }
+
+                      await loadRulesForSelectedStore(next)
+                    }}
+                    className="w-full px-3 py-2 border rounded-md"
+                  >
+                    <option value="global">Todas as lojas (global)</option>
+                    {stores.map((store) => (
+                      <option key={store.id} value={store.id}>
+                        {store.name}
+                      </option>
+                    ))}
+                  </select>
+                  {loadingStoreRules && (
+                    <p className="text-xs text-muted-foreground">Carregando regras deste escopo...</p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
@@ -510,25 +668,40 @@ export default function AlertsPage() {
         </Card>
 
         {/* Filter Tabs */}
-        <div className="flex gap-2">
-          <Button
-            variant={filter === 'all' ? 'default' : 'outline'}
-            onClick={() => setFilter('all')}
-          >
-            Todos ({alerts.length})
-          </Button>
-          <Button
-            variant={filter === 'unread' ? 'default' : 'outline'}
-            onClick={() => setFilter('unread')}
-          >
-            Não lidos ({unreadCount})
-          </Button>
-          <Button
-            variant={filter === 'read' ? 'default' : 'outline'}
-            onClick={() => setFilter('read')}
-          >
-            Lidos ({alerts.length - unreadCount})
-          </Button>
+        <div className="flex gap-2 justify-between items-center">
+          <div className="flex gap-2">
+            <Button
+              variant={filter === 'all' ? 'default' : 'outline'}
+              onClick={() => setFilter('all')}
+            >
+              Todos ({alerts.length})
+            </Button>
+            <Button
+              variant={filter === 'unread' ? 'default' : 'outline'}
+              onClick={() => setFilter('unread')}
+            >
+              Não lidos ({unreadCount})
+            </Button>
+            <Button
+              variant={filter === 'read' ? 'default' : 'outline'}
+              onClick={() => setFilter('read')}
+            >
+              Lidos ({alerts.length - unreadCount})
+            </Button>
+          </div>
+          
+          {alerts.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                const exportData = filteredAlerts.map(formatAlertForExport)
+                exportToCSV(exportData, 'alertas-pulsewatch')
+              }}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Exportar CSV
+            </Button>
+          )}
         </div>
 
         {/* Alerts List */}

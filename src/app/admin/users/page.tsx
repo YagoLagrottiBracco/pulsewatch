@@ -169,6 +169,8 @@ export default function AdminUsersPage() {
     switch (tier) {
       case 'pro':
         return <Badge className="bg-purple-600">Pro</Badge>
+      case 'ultimate':
+        return <Badge className="bg-slate-700">Ultimate</Badge>
       case 'free':
         return <Badge variant="outline">Free</Badge>
       default:

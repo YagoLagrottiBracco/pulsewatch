@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
   // Protected routes
-  const protectedPaths = ['/dashboard', '/stores', '/products', '/alerts', '/settings']
+  const protectedPaths = ['/dashboard', '/stores', '/products', '/alerts', '/settings', '/analytics', '/alert-rules', '/activity']
   const isProtectedPath = protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))
 
   const response = await updateSession(request)

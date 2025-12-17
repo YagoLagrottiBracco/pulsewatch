@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/dashboard-layout'
 import { createClient } from '@/lib/supabase/client'
@@ -10,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Store, Trash2, RefreshCw, Edit } from 'lucide-react'
+import { logAudit, AuditActions, EntityTypes } from '@/lib/audit-logger'
 
 export default function StoresPage() {
   const [stores, setStores] = useState<any[]>([])
@@ -80,7 +82,7 @@ export default function StoresPage() {
 
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('id, user_id, email, onboarding_completed, onboarding_completed_at')
+        .select('id, user_id, email, onboarding_completed, onboarding_completed_at, plan, subscription_tier, trial_ends_at')
         .eq('user_id', user.id)
         .maybeSingle()
 
@@ -110,7 +112,7 @@ export default function StoresPage() {
             },
             { onConflict: 'user_id' }
           )
-          .select('id, user_id, email, onboarding_completed, onboarding_completed_at')
+          .select('id, user_id, email, onboarding_completed, onboarding_completed_at, plan, subscription_tier, trial_ends_at')
           .single()
 
         if (syncError) {
@@ -121,6 +123,9 @@ export default function StoresPage() {
           id: profileRecord?.id,
           user_id: user.id,
           email: profileRecord?.email || user.email,
+          plan: profileRecord?.plan || 'free',
+          subscription_tier: profileRecord?.subscription_tier || 'free',
+          trial_ends_at: profileRecord?.trial_ends_at || null,
           ...completionData,
         }
       }
@@ -166,7 +171,7 @@ export default function StoresPage() {
           },
           { onConflict: 'user_id' }
         )
-        .select('id, user_id, email, onboarding_completed, onboarding_completed_at')
+        .select('id, user_id, email, onboarding_completed, onboarding_completed_at, plan, subscription_tier, trial_ends_at')
         .single()
 
       if (error) {
@@ -248,6 +253,12 @@ export default function StoresPage() {
   const handleAddStore = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    const isPro = profile?.plan === 'pro' || profile?.subscription_tier === 'pro'
+    if (!isPro && stores.length >= 1) {
+      alert('Seu plano Free permite monitorar apenas 1 loja. Faça upgrade para adicionar mais lojas.')
+      return
+    }
+
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -299,7 +310,7 @@ export default function StoresPage() {
     // Normalizar domain (remover https:// ou http://)
     const cleanDomain = formData.domain.replace(/^https?:\/\//, '')
 
-    const { error } = await supabase.from('stores').insert({
+    const { data: newStore, error } = await supabase.from('stores').insert({
       user_id: user.id,
       name: formData.name,
       domain: cleanDomain,
@@ -307,9 +318,16 @@ export default function StoresPage() {
       platform_config: platformConfig,
       status: 'checking',
       is_active: true,
-    })
+    }).select().single()
 
-    if (!error) {
+    if (!error && newStore) {
+      await logAudit({
+        action: AuditActions.STORE_CREATED,
+        entity_type: EntityTypes.STORE,
+        entity_id: newStore.id,
+        metadata: { name: formData.name, domain: cleanDomain, platform: platformKey }
+      })
+      
       setFormData({
         name: '',
         domain: '',
@@ -402,6 +420,13 @@ export default function StoresPage() {
       .eq('id', editingStore.id)
 
     if (!error) {
+      await logAudit({
+        action: AuditActions.STORE_UPDATED,
+        entity_type: EntityTypes.STORE,
+        entity_id: editingStore.id,
+        metadata: { name: formData.name, domain: cleanDomain }
+      })
+      
       setFormData({
         name: '',
         domain: '',
@@ -469,10 +494,19 @@ export default function StoresPage() {
   const handleDeleteStore = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir esta loja?')) return
 
+    const store = stores.find(s => s.id === id)
     const supabase = createClient()
     const { error } = await supabase.from('stores').delete().eq('id', id)
 
     if (!error) {
+      if (store) {
+        await logAudit({
+          action: AuditActions.STORE_DELETED,
+          entity_type: EntityTypes.STORE,
+          entity_id: id,
+          metadata: { name: store.name, domain: store.domain }
+        })
+      }
       loadStores()
     }
   }
@@ -583,11 +617,55 @@ export default function StoresPage() {
               Gerencie suas lojas monitoradas
             </p>
           </div>
-          <Button onClick={() => setShowAddForm(!showAddForm)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar Loja
-          </Button>
+          {(() => {
+            const isPro = profile?.plan === 'pro' || profile?.subscription_tier === 'pro'
+            const atFreeLimit = !isPro && stores.length >= 1
+
+            if (atFreeLimit) {
+              return (
+                <div className="flex items-center gap-2">
+                  <Button disabled>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Limite do Free
+                  </Button>
+                  <Link href="/settings">
+                    <Button variant="outline">Upgrade</Button>
+                  </Link>
+                </div>
+              )
+            }
+
+            return (
+              <Button onClick={() => setShowAddForm(!showAddForm)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Adicionar Loja
+              </Button>
+            )
+          })()}
         </div>
+
+        {(() => {
+          const isPro = profile?.plan === 'pro' || profile?.subscription_tier === 'pro'
+          const atFreeLimit = !isPro && stores.length >= 1
+
+          if (!atFreeLimit) return null
+
+          return (
+            <Card className="border-2 border-dashed">
+              <CardHeader>
+                <CardTitle>Você atingiu o limite do plano Free</CardTitle>
+                <CardDescription>
+                  Faça upgrade para o Premium e monitore quantas lojas quiser.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href="/settings">
+                  <Button className="w-full">⚡ Upgrade para PRO</Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )
+        })()}
 
         {/* Add/Edit Store Form */}
         {showAddForm && (

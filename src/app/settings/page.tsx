@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Mail, MessageSquare, User, Save, ExternalLink } from 'lucide-react'
+import { logAudit, AuditActions, EntityTypes } from '@/lib/audit-logger'
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState<any>(null)
@@ -125,6 +126,16 @@ export default function SettingsPage() {
         .eq('user_id', user.id)
 
       if (error) throw error
+
+      await logAudit({
+        action: AuditActions.SETTINGS_UPDATED,
+        entity_type: EntityTypes.USER_PROFILE,
+        entity_id: user.id,
+        metadata: { 
+          email_notifications: formData.email_notifications,
+          telegram_notifications: formData.telegram_notifications
+        }
+      })
 
       setMessage('Configurações salvas com sucesso!')
       loadProfile()
@@ -443,6 +454,30 @@ export default function SettingsPage() {
               <div className="text-sm text-muted-foreground">
                 Renovação em: {new Date(profile.subscription_ends_at).toLocaleDateString('pt-BR')}
               </div>
+            )}
+
+            {profile?.plan === 'pro' && profile?.stripe_customer_id && (
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  setSaving(true)
+                  try {
+                    const response = await fetch('/api/stripe/create-portal', {
+                      method: 'POST',
+                    })
+                    const { url } = await response.json()
+                    if (url) window.location.href = url
+                  } catch (error) {
+                    console.error('Portal error:', error)
+                    setMessage('Erro ao abrir portal de gerenciamento')
+                  } finally {
+                    setSaving(false)
+                  }
+                }}
+                disabled={saving}
+              >
+                Gerenciar Assinatura
+              </Button>
             )}
 
             <div className="pt-4 border-t space-y-3">
