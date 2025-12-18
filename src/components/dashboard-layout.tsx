@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { LogoIcon } from '@/components/ui/logo'
-import { Store, Package, AlertTriangle, Settings, LogOut, Menu, LayoutDashboard, BarChart3, Bell, Activity } from 'lucide-react'
+import { Store, Package, AlertTriangle, Settings, LogOut, Menu, LayoutDashboard, BarChart3, Bell, Activity, Sparkles } from 'lucide-react'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -124,6 +124,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+    ...(profile?.subscription_tier === 'ultimate' ? [{ name: 'Insights IA', href: '/dashboard/insights', icon: Sparkles }] : []),
     { name: 'Lojas', href: '/stores', icon: Store },
     { name: 'Produtos', href: '/products', icon: Package },
     { name: 'Alertas', href: '/alerts', icon: AlertTriangle },

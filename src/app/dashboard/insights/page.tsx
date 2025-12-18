@@ -1,0 +1,611 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Sparkles, TrendingUp, Package, AlertTriangle, DollarSign, BarChart3, ShoppingCart, Clock, Trash2, RefreshCw, Crown, Lock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/components/ui/use-toast';
+import Link from 'next/link';
+
+interface Insight {
+  id: string;
+  insight_type: string;
+  title: string;
+  summary: string;
+  detailed_analysis: {
+    mainFindings: string[];
+    trends: string[];
+    risks: string[];
+    opportunities: string[];
+  };
+  recommendations: Array<{
+    title: string;
+    description: string;
+    priority: 'high' | 'medium' | 'low';
+    impact: string;
+  }>;
+  confidence_score: number;
+  created_at: string;
+  expires_at: string;
+}
+
+interface InsightsResponse {
+  insights: Insight[];
+  nextAvailableAt: string;
+  canGenerate: boolean;
+  upgradeRequired?: boolean;
+  message?: string;
+  error?: string;
+}
+
+const insightTypeConfig = {
+  sales_patterns: {
+    icon: TrendingUp,
+    label: 'Padrões de Vendas',
+    color: 'text-blue-500',
+    bgColor: 'bg-blue-500/10',
+  },
+  stock_forecast: {
+    icon: Package,
+    label: 'Previsão de Estoque',
+    color: 'text-purple-500',
+    bgColor: 'bg-purple-500/10',
+  },
+  product_recommendations: {
+    icon: ShoppingCart,
+    label: 'Recomendações de Produtos',
+    color: 'text-green-500',
+    bgColor: 'bg-green-500/10',
+  },
+  anomaly_detection: {
+    icon: AlertTriangle,
+    label: 'Detecção de Anomalias',
+    color: 'text-red-500',
+    bgColor: 'bg-red-500/10',
+  },
+  pricing_suggestions: {
+    icon: DollarSign,
+    label: 'Sugestões de Precificação',
+    color: 'text-yellow-500',
+    bgColor: 'bg-yellow-500/10',
+  },
+  performance_analysis: {
+    icon: BarChart3,
+    label: 'Análise de Performance',
+    color: 'text-indigo-500',
+    bgColor: 'bg-indigo-500/10',
+  },
+  dropshipping_analysis: {
+    icon: Sparkles,
+    label: 'Análise Dropshipping',
+    color: 'text-pink-500',
+    bgColor: 'bg-pink-500/10',
+  },
+};
+
+export default function InsightsPage() {
+  const [insights, setInsights] = useState<Insight[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [canGenerate, setCanGenerate] = useState(false);
+  const [nextAvailable, setNextAvailable] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<string>('all');
+  const [upgradeRequired, setUpgradeRequired] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchInsights();
+  }, []);
+
+  const fetchInsights = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/insights');
+      const data: InsightsResponse = await response.json();
+
+      if (response.ok) {
+        setInsights(data.insights || []);
+        setCanGenerate(data.canGenerate);
+        setNextAvailable(data.nextAvailableAt);
+        setUpgradeRequired(false);
+      } else if (response.status === 403 && data.upgradeRequired) {
+        setUpgradeRequired(true);
+        setInsights([]);
+        setCanGenerate(false);
+      } else {
+        throw new Error(data.message || 'Erro ao carregar insights');
+      }
+    } catch (error: any) {
+      console.error('Error fetching insights:', error);
+      if (!upgradeRequired) {
+        toast({
+          title: 'Erro',
+          description: error.message || 'Falha ao carregar insights',
+          variant: 'destructive',
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateInsights = async () => {
+    try {
+      setGenerating(true);
+      const response = await fetch('/api/insights/generate', {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: 'Sucesso! 🎉',
+          description: data.message,
+        });
+        await fetchInsights();
+      } else {
+        if (response.status === 429) {
+          const timeUntil = new Date(data.nextAvailableAt).toLocaleString('pt-BR');
+          toast({
+            title: 'Limite atingido',
+            description: `Próxima geração disponível em: ${timeUntil}`,
+            variant: 'destructive',
+          });
+        } else {
+          throw new Error(data.message || data.error);
+        }
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.message || 'Falha ao gerar insights',
+        variant: 'destructive',
+      });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const deleteInsight = async (id: string) => {
+    try {
+      const response = await fetch(`/api/insights?id=${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setInsights(insights.filter((i) => i.id !== id));
+        toast({
+          title: 'Insight removido',
+          description: 'Insight deletado com sucesso',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Falha ao deletar insight',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const filteredInsights =
+    selectedType === 'all'
+      ? insights
+      : insights.filter((i) => i.insight_type === selectedType);
+
+  const getTimeUntilNext = () => {
+    if (!nextAvailable) return null;
+    const now = new Date();
+    const next = new Date(nextAvailable);
+    const diff = next.getTime() - now.getTime();
+
+    if (diff <= 0) return 'Disponível agora';
+
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+    return `${hours}h ${minutes}m`;
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high':
+        return 'bg-red-500/10 text-red-500 border-red-500/20';
+      case 'medium':
+        return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
+      case 'low':
+        return 'bg-green-500/10 text-green-500 border-green-500/20';
+      default:
+        return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Carregando insights...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Paywall for non-Ultimate users
+  if (upgradeRequired) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <div className="flex flex-col items-center justify-center min-h-[70vh]">
+          <Card className="max-w-2xl w-full">
+            <CardHeader className="text-center">
+              <div className="flex justify-center mb-4">
+                <div className="relative">
+                  <Sparkles className="h-20 w-20 text-primary" />
+                  <Lock className="h-8 w-8 text-muted-foreground absolute -bottom-1 -right-1 bg-background rounded-full p-1" />
+                </div>
+              </div>
+              <CardTitle className="text-3xl flex items-center justify-center gap-2">
+                <Crown className="h-8 w-8 text-yellow-500" />
+                Insights com IA
+              </CardTitle>
+              <CardDescription className="text-lg mt-2">
+                Recurso exclusivo do plano Ultimate
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="bg-muted/50 rounded-lg p-6 space-y-4">
+                <h3 className="font-semibold text-lg">Com Insights IA você terá:</h3>
+                <ul className="space-y-3">
+                  <li className="flex items-start gap-3">
+                    <TrendingUp className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <strong>Análise de Padrões de Vendas</strong>
+                      <p className="text-sm text-muted-foreground">Identifique tendências e sazonalidades</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <Package className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <strong>Previsão de Estoque Inteligente</strong>
+                      <p className="text-sm text-muted-foreground">Nunca mais fique sem produtos importantes</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <ShoppingCart className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <strong>Recomendações de Produtos</strong>
+                      <p className="text-sm text-muted-foreground">Saiba quais produtos promover ou descontinuar</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <strong>Detecção de Anomalias</strong>
+                      <p className="text-sm text-muted-foreground">Identifique problemas antes que se tornem críticos</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <DollarSign className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <strong>Sugestões de Precificação</strong>
+                      <p className="text-sm text-muted-foreground">Otimize seus preços para maximizar lucros</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <BarChart3 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <strong>Análise de Performance Completa</strong>
+                      <p className="text-sm text-muted-foreground">KPIs e métricas detalhadas</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <Sparkles className="h-5 w-5 text-yellow-500 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <strong className="text-yellow-600">Análise para Dropshipping</strong>
+                      <p className="text-sm text-muted-foreground">Insights focados em dropshipping e fornecedores</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="text-center space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Desbloqueie todo o potencial da IA para seu e-commerce
+                </p>
+                <Link href="/settings">
+                  <Button size="lg" className="w-full sm:w-auto gap-2">
+                    <Crown className="h-5 w-5" />
+                    Fazer Upgrade para Ultimate
+                  </Button>
+                </Link>
+                <p className="text-xs text-muted-foreground">
+                  Cancele a qualquer momento
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto py-8 px-4">
+      <div className="flex flex-col gap-6">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Sparkles className="h-8 w-8 text-primary" />
+              Insights com IA
+              <Badge variant="outline" className="gap-1">
+                <Crown className="h-3 w-3 text-yellow-500" />
+                Ultimate
+              </Badge>
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Análises inteligentes baseadas nos seus dados de e-commerce
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            {!canGenerate && nextAvailable && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                <span>Próxima geração: {getTimeUntilNext()}</span>
+              </div>
+            )}
+            <Button
+              onClick={generateInsights}
+              disabled={!canGenerate || generating}
+              size="lg"
+              className="gap-2"
+            >
+              <Sparkles className={generating ? 'animate-spin' : ''} />
+              {generating ? 'Gerando...' : 'Gerar Insights'}
+            </Button>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        {insights.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Total de Insights</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{insights.length}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Confiança Média</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {(
+                    (insights.reduce((sum, i) => sum + (i.confidence_score || 0), 0) /
+                      insights.length) *
+                    100
+                  ).toFixed(0)}
+                  %
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Recomendações</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {insights.reduce(
+                    (sum, i) => sum + (i.recommendations?.length || 0),
+                    0
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Alta Prioridade</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {insights.reduce(
+                    (sum, i) =>
+                      sum +
+                      (i.recommendations?.filter((r) => r.priority === 'high').length ||
+                        0),
+                    0
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Filters */}
+        <Tabs value={selectedType} onValueChange={setSelectedType}>
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
+            <TabsTrigger value="all">Todos</TabsTrigger>
+            {Object.entries(insightTypeConfig).map(([key, config]) => (
+              <TabsTrigger key={key} value={key} className="gap-1">
+                <config.icon className="h-3 w-3" />
+                <span className="hidden lg:inline">{config.label.split(' ')[0]}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+
+        {/* Insights List */}
+        {filteredInsights.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <Sparkles className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Nenhum insight ainda</h3>
+              <p className="text-muted-foreground text-center mb-4">
+                Clique em "Gerar Insights" para criar análises inteligentes dos seus dados
+              </p>
+              {canGenerate && (
+                <Button onClick={generateInsights} disabled={generating}>
+                  <Sparkles className="mr-2" />
+                  Gerar Primeiro Insight
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-6">
+            {filteredInsights.map((insight) => {
+              const config = insightTypeConfig[insight.insight_type as keyof typeof insightTypeConfig];
+              const Icon = config?.icon || Sparkles;
+
+              return (
+                <Card key={insight.id}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3 flex-1">
+                        <div className={`p-2 rounded-lg ${config?.bgColor}`}>
+                          <Icon className={`h-5 w-5 ${config?.color}`} />
+                        </div>
+                        <div className="flex-1">
+                          <CardTitle className="text-xl">{insight.title}</CardTitle>
+                          <CardDescription className="mt-1">
+                            {insight.summary}
+                          </CardDescription>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge variant="outline">{config?.label}</Badge>
+                            <Badge variant="outline">
+                              Confiança: {(insight.confidence_score * 100).toFixed(0)}%
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(insight.created_at).toLocaleDateString('pt-BR')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deleteInsight(insight.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Main Findings */}
+                    {insight.detailed_analysis?.mainFindings?.length > 0 && (
+                      <div>
+                        <h4 className="font-semibold mb-2 flex items-center gap-2">
+                          <TrendingUp className="h-4 w-4" />
+                          Principais Descobertas
+                        </h4>
+                        <ul className="space-y-1 ml-6">
+                          {insight.detailed_analysis.mainFindings.map((finding, idx) => (
+                            <li key={idx} className="text-sm text-muted-foreground list-disc">
+                              {finding}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Trends */}
+                    {insight.detailed_analysis?.trends?.length > 0 && (
+                      <div>
+                        <h4 className="font-semibold mb-2 flex items-center gap-2">
+                          <BarChart3 className="h-4 w-4" />
+                          Tendências
+                        </h4>
+                        <ul className="space-y-1 ml-6">
+                          {insight.detailed_analysis.trends.map((trend, idx) => (
+                            <li key={idx} className="text-sm text-muted-foreground list-disc">
+                              {trend}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Opportunities */}
+                    {insight.detailed_analysis?.opportunities?.length > 0 && (
+                      <div>
+                        <h4 className="font-semibold mb-2 flex items-center gap-2 text-green-600">
+                          <Sparkles className="h-4 w-4" />
+                          Oportunidades
+                        </h4>
+                        <ul className="space-y-1 ml-6">
+                          {insight.detailed_analysis.opportunities.map((opp, idx) => (
+                            <li key={idx} className="text-sm text-muted-foreground list-disc">
+                              {opp}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Risks */}
+                    {insight.detailed_analysis?.risks?.length > 0 && (
+                      <div>
+                        <h4 className="font-semibold mb-2 flex items-center gap-2 text-red-600">
+                          <AlertTriangle className="h-4 w-4" />
+                          Riscos
+                        </h4>
+                        <ul className="space-y-1 ml-6">
+                          {insight.detailed_analysis.risks.map((risk, idx) => (
+                            <li key={idx} className="text-sm text-muted-foreground list-disc">
+                              {risk}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Recommendations */}
+                    {insight.recommendations?.length > 0 && (
+                      <div>
+                        <h4 className="font-semibold mb-3">Recomendações</h4>
+                        <div className="space-y-3">
+                          {insight.recommendations.map((rec, idx) => (
+                            <div
+                              key={idx}
+                              className="border rounded-lg p-4 space-y-2"
+                            >
+                              <div className="flex items-start justify-between">
+                                <h5 className="font-medium">{rec.title}</h5>
+                                <Badge
+                                  variant="outline"
+                                  className={getPriorityColor(rec.priority)}
+                                >
+                                  {rec.priority === 'high'
+                                    ? 'Alta'
+                                    : rec.priority === 'medium'
+                                    ? 'Média'
+                                    : 'Baixa'}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {rec.description}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                <strong>Impacto:</strong> {rec.impact}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
