@@ -24,13 +24,10 @@ export async function GET(request: NextRequest) {
     // Criar cliente Supabase com service role
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Buscar todas as lojas ativas com informação do plano do usuário
+    // Buscar todas as lojas ativas
     const { data: stores, error: storesError } = await supabase
       .from('stores')
-      .select(`
-        *,
-        user_profiles!inner(subscription_tier)
-      `)
+      .select('*')
       .eq('is_active', true)
 
     if (storesError) throw storesError
@@ -41,8 +38,15 @@ export async function GET(request: NextRequest) {
     // Verificar cada loja
     for (const store of stores || []) {
       try {
+        // Buscar o tier do usuário
+        const { data: userProfile } = await supabase
+          .from('user_profiles')
+          .select('subscription_tier')
+          .eq('user_id', store.user_id)
+          .single()
+        
         // Verificar intervalo baseado no plano
-        const userTier = store.user_profiles?.subscription_tier || 'free'
+        const userTier = userProfile?.subscription_tier || 'free'
         const lastCheck = store.last_check ? new Date(store.last_check) : null
         
         // Free: verificação a cada 10 minutos
