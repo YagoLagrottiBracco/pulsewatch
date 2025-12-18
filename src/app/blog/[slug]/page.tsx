@@ -58,11 +58,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = post.seo_title || post.title
   const description = post.seo_description || post.excerpt || post.title
   const rawOgImage = post.seo_og_image || post.cover_image || null
+  
+  // Imagem padrão para OG se não houver imagem específica
+  const defaultOgImage = `${appUrl}/og-image.png`
+  
   const ogImage = rawOgImage
     ? rawOgImage.startsWith('http')
       ? rawOgImage
       : `${appUrl}/${rawOgImage.replace(/^\/+/, '')}`
-    : undefined
+    : defaultOgImage
 
   const keywordsArray = post.seo_keywords
     ? (post.seo_keywords as string)
@@ -90,23 +94,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       publishedTime: post.published_at || undefined,
       modifiedTime: post.updated_at || undefined,
       tags: Array.isArray(post.tags) ? post.tags : undefined,
-      images: ogImage
-        ? [
-            {
-              url: ogImage,
-              width: 1200,
-              height: 630,
-              alt: title,
-            },
-          ]
-        : undefined,
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 630,
+          alt: title,
+          type: 'image/png',
+        },
+      ],
+      locale: 'pt_BR',
     },
     twitter: {
-      card: ogImage ? 'summary_large_image' : 'summary',
+      card: 'summary_large_image',
       title,
       description,
-      images: ogImage ? [ogImage] : undefined,
+      images: [ogImage],
       site: '@pulsewatch',
+      creator: '@pulsewatch',
     },
     robots: {
       index: true,
