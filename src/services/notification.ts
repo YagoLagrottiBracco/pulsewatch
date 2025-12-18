@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import nodemailer from 'nodemailer'
+import { sendWhatsAppAlert, type WhatsAppAlertData } from './whatsapp'
+import { sendSMSAlert, type SMSAlertData } from './sms'
 
 interface NotificationData {
   userId: string
@@ -28,6 +30,8 @@ export async function sendNotifications(data: NotificationData) {
   const results = {
     email: false,
     telegram: false,
+    whatsapp: false,
+    sms: false,
   }
 
   // Enviar email se habilitado
@@ -47,6 +51,40 @@ export async function sendNotifications(data: NotificationData) {
       results.telegram = true
     } catch (error) {
       console.error('Erro ao enviar telegram:', error)
+    }
+  }
+
+  // Enviar WhatsApp se habilitado
+  if (profile.whatsapp_notifications && profile.whatsapp_number) {
+    try {
+      const whatsappData: WhatsAppAlertData = {
+        storeName: data.storeName,
+        alertType: data.alertType,
+        alertTitle: data.alertTitle,
+        message: data.alertMessage,
+        timestamp: new Date().toISOString(),
+      }
+      await sendWhatsAppAlert(profile.whatsapp_number, whatsappData)
+      results.whatsapp = true
+    } catch (error) {
+      console.error('Erro ao enviar WhatsApp:', error)
+    }
+  }
+
+  // Enviar SMS se habilitado
+  if (profile.sms_notifications && profile.sms_number) {
+    try {
+      const smsData: SMSAlertData = {
+        storeName: data.storeName,
+        alertType: data.alertType,
+        alertTitle: data.alertTitle,
+        message: data.alertMessage,
+        timestamp: new Date().toISOString(),
+      }
+      await sendSMSAlert(profile.sms_number, smsData)
+      results.sms = true
+    } catch (error) {
+      console.error('Erro ao enviar SMS:', error)
     }
   }
 

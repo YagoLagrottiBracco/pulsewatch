@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Mail, MessageSquare, User, Save, ExternalLink } from 'lucide-react'
+import { Mail, MessageSquare, User, Save, ExternalLink, Phone, MessageCircle } from 'lucide-react'
 import { logAudit, AuditActions, EntityTypes } from '@/lib/audit-logger'
 
 export default function SettingsPage() {
@@ -23,6 +23,10 @@ export default function SettingsPage() {
     email_notifications: true,
     telegram_notifications: false,
     telegram_chat_id: '',
+    whatsapp_notifications: false,
+    whatsapp_number: '',
+    sms_notifications: false,
+    sms_number: '',
   })
 
   useEffect(() => {
@@ -69,6 +73,10 @@ export default function SettingsPage() {
           email_notifications: newProfile.email_notifications ?? true,
           telegram_notifications: newProfile.telegram_notifications ?? false,
           telegram_chat_id: newProfile.telegram_chat_id || '',
+          whatsapp_notifications: newProfile.whatsapp_notifications ?? false,
+          whatsapp_number: newProfile.whatsapp_number || '',
+          sms_notifications: newProfile.sms_notifications ?? false,
+          sms_number: newProfile.sms_number || '',
         })
       } else {
         // Fallback: mesmo com erro, mostrar email do usuário
@@ -78,6 +86,10 @@ export default function SettingsPage() {
           email_notifications: true,
           telegram_notifications: false,
           telegram_chat_id: '',
+          whatsapp_notifications: false,
+          whatsapp_number: '',
+          sms_notifications: false,
+          sms_number: '',
         })
       }
     } else if (data) {
@@ -88,6 +100,10 @@ export default function SettingsPage() {
         email_notifications: data.email_notifications ?? true,
         telegram_notifications: data.telegram_notifications ?? false,
         telegram_chat_id: data.telegram_chat_id || '',
+        whatsapp_notifications: data.whatsapp_notifications ?? false,
+        whatsapp_number: data.whatsapp_number || '',
+        sms_notifications: data.sms_notifications ?? false,
+        sms_number: data.sms_number || '',
       })
     } else {
       // Fallback final: sempre mostrar pelo menos o email
@@ -97,6 +113,10 @@ export default function SettingsPage() {
         email_notifications: true,
         telegram_notifications: false,
         telegram_chat_id: '',
+        whatsapp_notifications: false,
+        whatsapp_number: '',
+        sms_notifications: false,
+        sms_number: '',
       })
     }
 
@@ -122,6 +142,10 @@ export default function SettingsPage() {
           email_notifications: formData.email_notifications,
           telegram_notifications: formData.telegram_notifications,
           telegram_chat_id: formData.telegram_chat_id,
+          whatsapp_notifications: formData.whatsapp_notifications,
+          whatsapp_number: formData.whatsapp_number,
+          sms_notifications: formData.sms_notifications,
+          sms_number: formData.sms_number,
         })
         .eq('user_id', user.id)
 
@@ -133,7 +157,9 @@ export default function SettingsPage() {
         entity_id: user.id,
         metadata: { 
           email_notifications: formData.email_notifications,
-          telegram_notifications: formData.telegram_notifications
+          telegram_notifications: formData.telegram_notifications,
+          whatsapp_notifications: formData.whatsapp_notifications,
+          sms_notifications: formData.sms_notifications
         }
       })
 
@@ -362,6 +388,168 @@ export default function SettingsPage() {
                     />
                     <p className="text-xs text-muted-foreground">
                       Obtenha este código enviando /start para o bot
+                    </p>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* WhatsApp Notifications */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Phone className="h-5 w-5" />
+                <CardTitle>Notificações por WhatsApp</CardTitle>
+              </div>
+              <CardDescription>
+                Receba alertas via WhatsApp no seu celular
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Ativar notificações por WhatsApp</p>
+                  <p className="text-sm text-muted-foreground">
+                    Mensagens instantâneas via WhatsApp
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.whatsapp_notifications}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        whatsapp_notifications: e.target.checked,
+                      })
+                    }
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                </label>
+              </div>
+
+              {formData.whatsapp_notifications && (
+                <>
+                  {!formData.whatsapp_number ? (
+                    <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-md space-y-3">
+                      <p className="text-sm font-medium">
+                        Configure seu WhatsApp
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Digite seu número no formato internacional para receber alertas
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-green-500/10 rounded-md">
+                      <p className="text-sm text-green-600 font-medium">
+                        ✓ WhatsApp configurado
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Número: {formData.whatsapp_number}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="whatsapp_number">
+                      Número WhatsApp (formato internacional)
+                    </Label>
+                    <Input
+                      id="whatsapp_number"
+                      value={formData.whatsapp_number}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          whatsapp_number: e.target.value,
+                        })
+                      }
+                      placeholder="+5511999999999"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Exemplo: +55 11 99999-9999 → +5511999999999
+                    </p>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* SMS Notifications */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <MessageCircle className="h-5 w-5" />
+                <CardTitle>Notificações por SMS</CardTitle>
+              </div>
+              <CardDescription>
+                Receba alertas via mensagem de texto (SMS)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Ativar notificações por SMS</p>
+                  <p className="text-sm text-muted-foreground">
+                    Mensagens de texto instantâneas
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.sms_notifications}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        sms_notifications: e.target.checked,
+                      })
+                    }
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                </label>
+              </div>
+
+              {formData.sms_notifications && (
+                <>
+                  {!formData.sms_number ? (
+                    <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-md space-y-3">
+                      <p className="text-sm font-medium">
+                        Configure seu número de celular
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Digite seu número no formato internacional para receber SMS
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-green-500/10 rounded-md">
+                      <p className="text-sm text-green-600 font-medium">
+                        ✓ SMS configurado
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Número: {formData.sms_number}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="sms_number">
+                      Número de celular (formato internacional)
+                    </Label>
+                    <Input
+                      id="sms_number"
+                      value={formData.sms_number}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          sms_number: e.target.value,
+                        })
+                      }
+                      placeholder="+5511999999999"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Exemplo: +55 11 99999-9999 → +5511999999999
                     </p>
                   </div>
                 </>
