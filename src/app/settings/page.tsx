@@ -579,10 +579,19 @@ export default function SettingsPage() {
               <div className="space-y-1">
                 <p className="text-sm font-medium">Plano Atual</p>
                 <div className="flex items-center gap-2">
-                  {profile?.plan === 'pro' ? (
+                  {profile?.subscription_tier === 'premium' ? (
                     <>
                       <Badge className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
-                        PRO
+                        PREMIUM
+                      </Badge>
+                      {profile?.subscription_status === 'active' && (
+                        <span className="text-xs text-green-600">✓ Ativo</span>
+                      )}
+                    </>
+                  ) : profile?.subscription_tier === 'ultimate' ? (
+                    <>
+                      <Badge className="bg-gradient-to-r from-slate-700 to-slate-900 text-white">
+                        ULTIMATE
                       </Badge>
                       {profile?.subscription_status === 'active' && (
                         <span className="text-xs text-green-600">✓ Ativo</span>
@@ -608,7 +617,7 @@ export default function SettingsPage() {
                 </div>
               </div>
               
-              {profile?.plan !== 'pro' && (
+              {profile?.subscription_tier === 'free' && (
                 <Button
                   onClick={async () => {
                     setSaving(true)
@@ -633,18 +642,18 @@ export default function SettingsPage() {
                   disabled={saving}
                   className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                 >
-                  ⚡ Upgrade para PRO
+                  ⚡ Upgrade para Premium
                 </Button>
               )}
             </div>
 
-            {profile?.plan === 'pro' && profile?.subscription_ends_at && (
+            {(profile?.subscription_tier === 'premium' || profile?.subscription_tier === 'ultimate') && profile?.subscription_ends_at && (
               <div className="text-sm text-muted-foreground">
                 Renovação em: {new Date(profile.subscription_ends_at).toLocaleDateString('pt-BR')}
               </div>
             )}
 
-            {profile?.plan === 'pro' && profile?.stripe_customer_id && (
+            {(profile?.subscription_tier === 'premium' || profile?.subscription_tier === 'ultimate') && profile?.stripe_customer_id && (
               <Button
                 variant="outline"
                 onClick={async () => {

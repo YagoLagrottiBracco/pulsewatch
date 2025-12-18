@@ -312,7 +312,7 @@ export default function AdminUserDetailPage() {
                     </p>
                     <Badge
                       className={
-                        user.subscription_tier === 'pro'
+                        user.subscription_tier === 'premium'
                           ? 'bg-purple-600'
                           : user.subscription_tier === 'ultimate'
                             ? 'bg-slate-700'

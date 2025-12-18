@@ -24,19 +24,46 @@ export async function GET(request: NextRequest) {
     // Criar cliente Supabase com service role
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Buscar todas as lojas ativas
+    // Buscar todas as lojas ativas com informação do plano do usuário
     const { data: stores, error: storesError } = await supabase
       .from('stores')
-      .select('*')
+      .select(`
+        *,
+        user_profiles!inner(subscription_tier)
+      `)
       .eq('is_active', true)
 
     if (storesError) throw storesError
 
     const results = []
+    const now = new Date()
 
     // Verificar cada loja
     for (const store of stores || []) {
       try {
+        // Verificar intervalo baseado no plano
+        const userTier = store.user_profiles?.subscription_tier || 'free'
+        const lastCheck = store.last_check ? new Date(store.last_check) : null
+        
+        // Free: verificação a cada 10 minutos
+        // Premium/Ultimate: verificação a cada 5 minutos
+        const requiredInterval = userTier === 'free' ? 10 : 5
+        
+        if (lastCheck) {
+          const minutesSinceLastCheck = (now.getTime() - lastCheck.getTime()) / (1000 * 60)
+          
+          if (minutesSinceLastCheck < requiredInterval) {
+            // Ainda não é hora de verificar esta loja
+            results.push({
+              store: store.name,
+              status: 'skipped',
+              reason: `Waiting ${requiredInterval}min interval (tier: ${userTier})`,
+              minutesSinceLastCheck: Math.floor(minutesSinceLastCheck)
+            })
+            continue
+          }
+        }
+        
         // Validar se tem domain
         if (!store.domain) {
           results.push({

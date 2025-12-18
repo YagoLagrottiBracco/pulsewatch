@@ -253,9 +253,11 @@ export default function StoresPage() {
   const handleAddStore = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const isPro = profile?.plan === 'pro' || profile?.subscription_tier === 'pro'
-    if (!isPro && stores.length >= 1) {
-      alert('Seu plano Free permite monitorar apenas 1 loja. Faça upgrade para adicionar mais lojas.')
+    const isPremiumOrUltimate = profile?.subscription_tier === 'premium' || profile?.subscription_tier === 'ultimate'
+    const isUltimate = profile?.subscription_tier === 'ultimate'
+    
+    if (!isPremiumOrUltimate && stores.length >= 1) {
+      alert('Seu plano Free permite monitorar apenas 1 loja. Faça upgrade para Premium ou Ultimate para adicionar mais lojas.')
       return
     }
 
@@ -266,6 +268,13 @@ export default function StoresPage() {
 
     // Determinar plataforma (manual > detectada > auto)
     let platformKey = selectedPlatform || detectedPlatform?.platform || null
+    
+    // Verificar se plataforma avançada requer Ultimate
+    const advancedPlatforms = ['magento', 'bigcommerce', 'prestashop', 'spree']
+    if (platformKey && advancedPlatforms.includes(platformKey) && !isUltimate) {
+      alert(`A plataforma ${platformKey} está disponível apenas no plano Ultimate. Faça upgrade para usar esta integração.`)
+      return
+    }
 
     if (!platformKey) {
       const detected = await detectPlatform(formData.domain)
@@ -618,8 +627,8 @@ export default function StoresPage() {
             </p>
           </div>
           {(() => {
-            const isPro = profile?.plan === 'pro' || profile?.subscription_tier === 'pro'
-            const atFreeLimit = !isPro && stores.length >= 1
+            const isPremiumOrUltimate = profile?.subscription_tier === 'premium' || profile?.subscription_tier === 'ultimate'
+            const atFreeLimit = !isPremiumOrUltimate && stores.length >= 1
 
             if (atFreeLimit) {
               return (
@@ -645,8 +654,8 @@ export default function StoresPage() {
         </div>
 
         {(() => {
-          const isPro = profile?.plan === 'pro' || profile?.subscription_tier === 'pro'
-          const atFreeLimit = !isPro && stores.length >= 1
+          const isPremiumOrUltimate = profile?.subscription_tier === 'premium' || profile?.subscription_tier === 'ultimate'
+          const atFreeLimit = !isPremiumOrUltimate && stores.length >= 1
 
           if (!atFreeLimit) return null
 

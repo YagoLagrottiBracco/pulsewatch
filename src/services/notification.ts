@@ -54,8 +54,8 @@ export async function sendNotifications(data: NotificationData) {
     }
   }
 
-  // Enviar WhatsApp se habilitado
-  if (profile.whatsapp_notifications && profile.whatsapp_number) {
+  // Enviar WhatsApp se habilitado (apenas Ultimate)
+  if (profile.whatsapp_notifications && profile.whatsapp_number && profile.subscription_tier === 'ultimate') {
     try {
       const whatsappData: WhatsAppAlertData = {
         storeName: data.storeName,
@@ -71,8 +71,8 @@ export async function sendNotifications(data: NotificationData) {
     }
   }
 
-  // Enviar SMS se habilitado
-  if (profile.sms_notifications && profile.sms_number) {
+  // Enviar SMS se habilitado (apenas Ultimate)
+  if (profile.sms_notifications && profile.sms_number && profile.subscription_tier === 'ultimate') {
     try {
       const smsData: SMSAlertData = {
         storeName: data.storeName,
