@@ -636,10 +636,10 @@ export default function LandingPage() {
                   </CardDescription>
                   <div className="mt-6">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-6xl font-black bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">R$ 29,99</span>
+                      <span className="text-6xl font-black bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">R$ 59,90</span>
                       <div className="flex flex-col">
                         <span className="text-lg text-muted-foreground font-medium">/mês</span>
-                        <span className="text-xs text-muted-foreground">~ R$ 1/dia</span>
+                        <span className="text-xs text-muted-foreground">~ R$ 2/dia</span>
                       </div>
                     </div>
                     <p className="text-sm mt-3 flex items-center gap-2">
@@ -692,15 +692,6 @@ export default function LandingPage() {
                         <CheckCircle className="h-4 w-4 text-primary" />
                       </div>
                       <div>
-                        <span className="font-semibold text-base">Histórico ilimitado</span>
-                        <p className="text-sm text-muted-foreground">Análise completa de todos os eventos</p>
-                      </div>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="h-4 w-4 text-primary" />
-                      </div>
-                      <div>
                         <span className="font-semibold text-base">Dashboard Pro</span>
                         <p className="text-sm text-muted-foreground">Visão avançada do desempenho da sua loja</p>
                       </div>
@@ -710,8 +701,17 @@ export default function LandingPage() {
                         <CheckCircle className="h-4 w-4 text-primary" />
                       </div>
                       <div>
-                        <span className="font-semibold text-base">Suporte VIP 24/7</span>
-                        <p className="text-sm text-muted-foreground">Atendimento prioritário em até 2h</p>
+                        <span className="font-semibold text-base">Análise de estoque</span>
+                        <p className="text-sm text-muted-foreground">Relatórios detalhados de inventário</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <CheckCircle className="h-4 w-4 text-primary" />
+                      </div>
+                      <div>
+                        <span className="font-semibold text-base">Regras personalizadas</span>
+                        <p className="text-sm text-muted-foreground">Crie alertas customizados para seu negócio</p>
                       </div>
                     </li>
                   </ul>
@@ -719,7 +719,7 @@ export default function LandingPage() {
                   <div className="pt-6 border-t space-y-3">
                     <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 text-center">
                       <p className="text-xs font-semibold text-yellow-700 dark:text-yellow-400">
-                        🎉 Oferta Especial: Primeiro mês com 20% OFF!
+                        🎉 Oferta Especial: Primeiro ano com 20% OFF!
                       </p>
                     </div>
                     <Link href="/auth/signup" className="w-full block">
@@ -755,11 +755,15 @@ export default function LandingPage() {
                     Recursos avançados que ainda não foram lançados
                   </CardDescription>
                   <div className="mt-6">
-                    <div className="flex items-baseline gap-2">
+                    <div className="flex flex-col gap-2">
                       <span className="text-5xl font-black text-muted-foreground">Em breve</span>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-bold text-muted-foreground/60">R$ 159,90</span>
+                        <span className="text-sm text-muted-foreground">/mês</span>
+                      </div>
                     </div>
                     <p className="text-sm text-muted-foreground mt-3">
-                      Lançaremos este plano assim que os recursos estiverem prontos
+                      Recursos avançados com IA e automação completa
                     </p>
                   </div>
                 </CardHeader>
@@ -771,7 +775,7 @@ export default function LandingPage() {
                       </div>
                       <div>
                         <span className="font-semibold text-base">Insights com IA</span>
-                        <p className="text-sm text-muted-foreground">em breve</p>
+                        <p className="text-sm text-muted-foreground">Análises inteligentes e previsões</p>
                       </div>
                     </li>
                     <li className="flex items-start gap-3">
@@ -779,17 +783,35 @@ export default function LandingPage() {
                         <Phone className="h-4 w-4 text-muted-foreground" />
                       </div>
                       <div>
-                        <span className="font-semibold text-base">Alertas via WhatsApp</span>
-                        <p className="text-sm text-muted-foreground">em breve</p>
+                        <span className="font-semibold text-base">Alertas via WhatsApp + SMS</span>
+                        <p className="text-sm text-muted-foreground">Notificações em todos os canais</p>
                       </div>
                     </li>
                     <li className="flex items-start gap-3">
                       <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                        <CheckCircle className="h-4 w-4 text-muted-foreground" />
                       </div>
                       <div>
-                        <span className="font-semibold text-base">Alertas via SMS</span>
-                        <p className="text-sm text-muted-foreground">em breve</p>
+                        <span className="font-semibold text-base">Histórico ilimitado</span>
+                        <p className="text-sm text-muted-foreground">Análise completa de todos os eventos</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Shield className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <span className="font-semibold text-base">Suporte VIP 24/7</span>
+                        <p className="text-sm text-muted-foreground">Atendimento prioritário em até 2h</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Store className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <span className="font-semibold text-base">Todas as plataformas</span>
+                        <p className="text-sm text-muted-foreground">Shopify, WooCommerce, Nuvemshop, VTEX, Magento, BigCommerce, PrestaShop, Spree</p>
                       </div>
                     </li>
                     <li className="flex items-start gap-3">
@@ -797,8 +819,8 @@ export default function LandingPage() {
                         <Sparkles className="h-4 w-4 text-muted-foreground" />
                       </div>
                       <div>
-                        <span className="font-semibold text-base">Tudo que ainda não foi implementado</span>
-                        <p className="text-sm text-muted-foreground">em breve</p>
+                        <span className="font-semibold text-base">Automações avançadas</span>
+                        <p className="text-sm text-muted-foreground">Ações automáticas baseadas em eventos</p>
                       </div>
                     </li>
                   </ul>
