@@ -313,7 +313,7 @@ export default function SettingsPage() {
                       </p>
                       <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
                         <li>Abra o Telegram no seu celular</li>
-                        <li>Procure pelo bot @PulseWatchBot</li>
+                        <li>Procure pelo bot @PulseWatch_Bot</li>
                         <li>Envie o comando /start</li>
                         <li>Copie o código que o bot enviar</li>
                         <li>Cole abaixo e salve</li>
