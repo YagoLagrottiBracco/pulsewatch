@@ -1,6 +1,6 @@
 -- Create AI Insights table
 CREATE TABLE IF NOT EXISTS ai_insights (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   store_id UUID REFERENCES stores(id) ON DELETE CASCADE,
   
@@ -31,7 +31,7 @@ CREATE INDEX idx_ai_insights_type ON ai_insights(insight_type);
 
 -- Create insight generation log for rate limiting
 CREATE TABLE IF NOT EXISTS insight_generation_log (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   generated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   success BOOLEAN DEFAULT true,
@@ -78,7 +78,6 @@ CREATE POLICY "Admins have full access to insights"
     EXISTS (
       SELECT 1 FROM admin_users
       WHERE admin_users.user_id = auth.uid()
-      AND admin_users.is_active = true
     )
   );
 
@@ -88,7 +87,6 @@ CREATE POLICY "Admins have full access to generation log"
     EXISTS (
       SELECT 1 FROM admin_users
       WHERE admin_users.user_id = auth.uid()
-      AND admin_users.is_active = true
     )
   );
 
