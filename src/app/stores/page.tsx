@@ -22,8 +22,28 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Store, Trash2, RefreshCw, Edit } from 'lucide-react'
+import { Plus, Store, Trash2, RefreshCw, Edit, TrendingDown, Clock } from 'lucide-react'
 import { logAudit, AuditActions, EntityTypes } from '@/lib/audit-logger'
+
+function maskBRL(value: string): string {
+  // Remove tudo que não é dígito
+  const digits = value.replace(/\D/g, '')
+  if (!digits) return ''
+  // Trata como centavos: "15000" → 150,00
+  const cents = parseInt(digits, 10)
+  return (cents / 100).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+  })
+}
+
+function parseBRL(masked: string): number | null {
+  // "R$ 1.500,00" → 1500.00
+  const cleaned = masked.replace(/[R$\s.]/g, '').replace(',', '.')
+  const value = parseFloat(cleaned)
+  return isNaN(value) ? null : value
+}
 
 export default function StoresPage() {
   const [stores, setStores] = useState<any[]>([])
@@ -33,6 +53,7 @@ export default function StoresPage() {
   const [formData, setFormData] = useState({
     name: '',
     domain: '',
+    revenuePerHour: '',
     shopifyApiKey: '',
     shopifyPassword: '',
     wooConsumerKey: '',
@@ -51,12 +72,18 @@ export default function StoresPage() {
   const [onboardingStep, setOnboardingStep] = useState<number>(0)
   const [profile, setProfile] = useState<any | null>(null)
   const [onboardingLoading, setOnboardingLoading] = useState<boolean>(true)
+  const [financialSummary, setFinancialSummary] = useState<{
+    total_incidents: number
+    total_downtime_minutes: number
+    total_estimated_loss: number
+  } | null>(null)
 
   const currentPlatform = selectedPlatform || detectedPlatform?.platform || null
 
   useEffect(() => {
     loadStores()
     loadOnboardingStatus()
+    loadFinancialSummary()
   }, [])
 
   useEffect(() => {
@@ -230,6 +257,17 @@ export default function StoresPage() {
 
   const currentOnboarding = onboardingSteps[onboardingStep]
 
+  const loadFinancialSummary = async () => {
+    try {
+      const res = await fetch('/api/stores/financial-loss?period=30')
+      if (!res.ok) return
+      const data = await res.json()
+      setFinancialSummary(data.summary)
+    } catch {
+      // silencioso — widget não crítico
+    }
+  }
+
   const loadStores = async () => {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -339,6 +377,7 @@ export default function StoresPage() {
       platform_config: platformConfig,
       status: 'checking',
       is_active: true,
+      revenue_per_hour: formData.revenuePerHour ? parseBRL(formData.revenuePerHour) : null,
     }).select().single()
 
     if (!error && newStore) {
@@ -352,6 +391,7 @@ export default function StoresPage() {
       setFormData({
         name: '',
         domain: '',
+        revenuePerHour: '',
         shopifyApiKey: '',
         shopifyPassword: '',
         wooConsumerKey: '',
@@ -437,6 +477,7 @@ export default function StoresPage() {
         name: formData.name,
         domain: cleanDomain,
         platform_config: platformConfig,
+        revenue_per_hour: formData.revenuePerHour ? parseBRL(formData.revenuePerHour) : null,
       })
       .eq('id', editingStore.id)
 
@@ -451,6 +492,7 @@ export default function StoresPage() {
       setFormData({
         name: '',
         domain: '',
+        revenuePerHour: '',
         shopifyApiKey: '',
         shopifyPassword: '',
         wooConsumerKey: '',
@@ -475,6 +517,7 @@ export default function StoresPage() {
     setFormData({
       name: store.name,
       domain: store.domain,
+      revenuePerHour: store.revenue_per_hour != null ? maskBRL(String(Math.round(store.revenue_per_hour * 100))) : '',
       shopifyApiKey: '',
       shopifyPassword: '',
       wooConsumerKey: '',
@@ -496,6 +539,7 @@ export default function StoresPage() {
     setFormData({
       name: '',
       domain: '',
+      revenuePerHour: '',
       shopifyApiKey: '',
       shopifyPassword: '',
       wooConsumerKey: '',
@@ -591,6 +635,50 @@ export default function StoresPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {financialSummary && financialSummary.total_incidents > 0 && (
+          <Card className="border-orange-200 bg-orange-50 dark:border-orange-900 dark:bg-orange-950/30">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center gap-6 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <TrendingDown className="h-5 w-5 text-orange-500" />
+                  <span className="text-sm font-medium text-orange-700 dark:text-orange-400">
+                    Perda estimada (últimos 30 dias)
+                  </span>
+                </div>
+                <div className="flex items-center gap-6 ml-auto flex-wrap">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-orange-700 dark:text-orange-300">
+                      {financialSummary.total_estimated_loss.toLocaleString('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL',
+                      })}
+                    </p>
+                    <p className="text-xs text-orange-600 dark:text-orange-400">impacto financeiro</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4 text-orange-500" />
+                      <p className="text-lg font-semibold text-orange-700 dark:text-orange-300">
+                        {Math.floor(financialSummary.total_downtime_minutes / 60)}h{' '}
+                        {financialSummary.total_downtime_minutes % 60}min
+                      </p>
+                    </div>
+                    <p className="text-xs text-orange-600 dark:text-orange-400">tempo offline</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-semibold text-orange-700 dark:text-orange-300">
+                      {financialSummary.total_incidents}
+                    </p>
+                    <p className="text-xs text-orange-600 dark:text-orange-400">
+                      {financialSummary.total_incidents === 1 ? 'incidente' : 'incidentes'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {showOnboarding && currentOnboarding && (
           <div className="border border-primary/40 bg-primary/5 rounded-xl p-6 relative overflow-hidden">
             <div className="absolute top-0 right-0 opacity-10 text-primary text-7xl font-black pr-4 pt-2">
@@ -745,6 +833,23 @@ export default function StoresPage() {
                       A plataforma será detectada automaticamente
                     </p>
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="revenuePerHour">Receita média por hora</Label>
+                  <Input
+                    id="revenuePerHour"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="R$ 0,00"
+                    value={formData.revenuePerHour}
+                    onChange={(e) =>
+                      setFormData({ ...formData, revenuePerHour: maskBRL(e.target.value) })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Usado para estimar perdas durante quedas. Deixe vazio para cálculo automático.
+                  </p>
                 </div>
 
                 {detectedPlatform && detectedPlatform.platform && (

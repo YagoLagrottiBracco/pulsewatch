@@ -4,6 +4,7 @@ import { sendNotifications } from '@/services/notification'
 import { NuvemshopClient } from '@/integrations/nuvemshop'
 import { TrayClient } from '@/integrations/tray'
 import { VtexClient } from '@/integrations/vtex'
+import { calculateFinancialLoss, resolveRevenuePerHour } from '@/services/financial-loss'
 
 // Esta rota é chamada pelo Vercel Cron a cada 10 minutos
 export async function GET(request: NextRequest) {
@@ -86,22 +87,81 @@ export async function GET(request: NextRequest) {
         
         // Atualizar status se mudou
         if (store.status !== newStatus) {
+          let financialLossMeta: Record<string, unknown> = {}
+
+          if (isOnline && store.offline_since) {
+            // Loja voltou: calcular perda financeira do período offline
+            const offlineSince = new Date(store.offline_since)
+            const durationMinutes = Math.round((now.getTime() - offlineSince.getTime()) / 60000)
+
+            // Buscar dados para fallback inteligente de receita/hora
+            const [ordersResult, productsResult] = await Promise.all([
+              supabase
+                .from('orders')
+                .select('total')
+                .eq('store_id', store.id)
+                .gte('order_date', new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()),
+              supabase
+                .from('products')
+                .select('price')
+                .eq('store_id', store.id)
+                .limit(100),
+            ])
+
+            const recentOrdersTotal = ordersResult.data?.reduce((sum, o) => sum + Number(o.total), 0) ?? null
+            const avgProductPrice = productsResult.data?.length
+              ? productsResult.data.reduce((sum, p) => sum + Number(p.price), 0) / productsResult.data.length
+              : null
+
+            const { value: revenuePerHour, source: revenueSource } = resolveRevenuePerHour({
+              configuredRevenue: store.revenue_per_hour ?? null,
+              recentOrdersTotal,
+              avgProductPrice,
+            })
+
+            const lossResult = calculateFinancialLoss(durationMinutes, revenuePerHour, revenueSource)
+
+            // Persistir incidente
+            await supabase.from('downtime_incidents').insert({
+              store_id: store.id,
+              started_at: store.offline_since,
+              recovered_at: now.toISOString(),
+              duration_minutes: durationMinutes,
+              revenue_per_hour: revenuePerHour,
+              estimated_loss: lossResult.estimatedLoss,
+            })
+
+            financialLossMeta = {
+              duration_minutes: durationMinutes,
+              estimated_loss: lossResult.estimatedLoss,
+              revenue_per_hour: revenuePerHour,
+              revenue_source: revenueSource,
+            }
+          }
+
+          // Atualizar status e offline_since
           await supabase
             .from('stores')
-            .update({ 
+            .update({
               status: newStatus,
-              last_check: new Date().toISOString()
+              last_check: now.toISOString(),
+              offline_since: isOnline ? null : now.toISOString(),
             })
             .eq('id', store.id)
 
           // Criar alerta com notificação
+          const financialMessage = financialLossMeta.estimated_loss
+            ? ` Impacto estimado: R$ ${Number(financialLossMeta.estimated_loss).toFixed(2).replace('.', ',')}.`
+            : ''
+
           await createAlertWithNotification(supabase, store, {
             type: isOnline ? 'LOJA_ONLINE' : 'LOJA_OFFLINE',
             severity: isOnline ? 'low' : 'high',
             title: isOnline ? 'Loja Online' : 'Loja Offline',
-            message: isOnline 
-              ? `A loja ${store.name} voltou a ficar online!`
+            message: isOnline
+              ? `A loja ${store.name} voltou a ficar online!${financialMessage}`
               : `A loja ${store.name} está offline!`,
+            metadata: isOnline && Object.keys(financialLossMeta).length ? financialLossMeta : undefined,
           })
         } else {
           // Apenas atualizar última verificação
