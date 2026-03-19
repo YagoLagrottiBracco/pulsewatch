@@ -4,7 +4,19 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/dashboard-layout'
 import { createClient } from '@/lib/supabase/client'
-import { detectPlatform } from '@/services/platform-detector'
+import type { PlatformDetectionResult } from '@/services/platform-detector'
+
+async function detectPlatformViaApi(domain: string): Promise<PlatformDetectionResult> {
+  const res = await fetch('/api/stores/detect', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ domain }),
+  })
+  if (!res.ok) {
+    return { platform: null, confidence: 0, indicators: ['Erro ao detectar plataforma'] }
+  }
+  return res.json()
+}
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -241,7 +253,7 @@ export default function StoresPage() {
 
     setDetecting(true)
     try {
-      const result = await detectPlatform(formData.domain)
+      const result = await detectPlatformViaApi(formData.domain)
       setDetectedPlatform(result)
     } catch (error) {
       console.error('Erro na detecção:', error)
@@ -277,7 +289,7 @@ export default function StoresPage() {
     }
 
     if (!platformKey) {
-      const detected = await detectPlatform(formData.domain)
+      const detected = await detectPlatformViaApi(formData.domain)
       platformKey = detected.platform
       setDetectedPlatform(detected)
     }
@@ -323,7 +335,7 @@ export default function StoresPage() {
       user_id: user.id,
       name: formData.name,
       domain: cleanDomain,
-      platform: platformKey,
+      platform: platformKey ?? 'unknown',
       platform_config: platformConfig,
       status: 'checking',
       is_active: true,
@@ -545,7 +557,7 @@ export default function StoresPage() {
     }
   }
 
-  const getPlatformBadge = (platform: string) => {
+  const getPlatformBadge = (platform: string | null | undefined) => {
     const colors: any = {
       shopify: 'bg-green-600',
       woocommerce: 'bg-purple-600',
@@ -553,6 +565,10 @@ export default function StoresPage() {
       tray: 'bg-orange-600',
       vtex: 'bg-red-600',
       unknown: 'bg-gray-600',
+    }
+
+    if (!platform) {
+      return <Badge className={colors.unknown}>Desconhecido</Badge>
     }
 
     return (
@@ -731,7 +747,7 @@ export default function StoresPage() {
                   </div>
                 </div>
 
-                {detectedPlatform && (
+                {detectedPlatform && detectedPlatform.platform && (
                   <div className="p-4 bg-muted rounded-md">
                     <p className="text-sm font-medium mb-2">Plataforma Detectada:</p>
                     <div className="flex items-center gap-2">

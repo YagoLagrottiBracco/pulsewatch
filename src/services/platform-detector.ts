@@ -15,12 +15,25 @@ export async function detectPlatform(domain: string): Promise<PlatformDetectionR
   let detectedPlatform: string | null = null
   let confidence = 0
 
+  // Detecção rápida por domínio (sem precisar de fetch)
+  if (cleanDomain.includes('.myshopify.com')) {
+    return { platform: 'shopify', confidence: 99, indicators: ['Shopify detectado via domínio .myshopify.com'] }
+  }
+  if (cleanDomain.includes('.nuvemshop.com.br') || cleanDomain.includes('.tiendanube.com')) {
+    return { platform: 'nuvemshop', confidence: 99, indicators: ['Nuvemshop detectado via domínio'] }
+  }
+  if (cleanDomain.includes('.mybigcommerce.com')) {
+    return { platform: 'bigcommerce', confidence: 99, indicators: ['BigCommerce detectado via domínio'] }
+  }
+  if (cleanDomain.includes('.tray.com.br')) {
+    return { platform: 'tray', confidence: 99, indicators: ['Tray detectado via domínio'] }
+  }
+
   try {
     // Fetch da página principal
     const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'PulseWatch/1.0',
-      },
+      headers: { 'User-Agent': 'PulseWatch/1.0' },
+      redirect: 'follow',
     })
 
     if (!response.ok) {
@@ -34,8 +47,7 @@ export async function detectPlatform(domain: string): Promise<PlatformDetectionR
     if (
       html.includes('Shopify') ||
       html.includes('cdn.shopify.com') ||
-      headers['x-shopify-stage'] ||
-      cleanDomain.includes('.myshopify.com')
+      headers['x-shopify-stage']
     ) {
       indicators.push('Shopify detectado via HTML/headers')
       detectedPlatform = 'shopify'
