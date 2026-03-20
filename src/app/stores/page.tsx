@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/dashboard-layout'
 import { createClient } from '@/lib/supabase/client'
+import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription'
 import type { PlatformDetectionResult } from '@/services/platform-detector'
 
 async function detectPlatformViaApi(domain: string): Promise<PlatformDetectionResult> {
@@ -85,6 +86,21 @@ export default function StoresPage() {
     loadOnboardingStatus()
     loadFinancialSummary()
   }, [])
+
+  useRealtimeSubscription({
+    channel: 'stores-page-stores',
+    table: 'stores',
+    onChange: () => {
+      loadStores()
+      loadFinancialSummary()
+    },
+  })
+
+  useRealtimeSubscription({
+    channel: 'stores-page-incidents',
+    table: 'downtime_incidents',
+    onChange: () => loadFinancialSummary(),
+  })
 
   useEffect(() => {
     if (onboardingLoading) return

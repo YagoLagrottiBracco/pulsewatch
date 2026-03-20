@@ -17,10 +17,16 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url)
   const storeId = searchParams.get('store_id')
-  const period = parseInt(searchParams.get('period') ?? '30', 10)
+  const periodParam = searchParams.get('period') ?? '30'
 
   const since = new Date()
-  since.setDate(since.getDate() - period)
+  if (periodParam === 'month') {
+    since.setDate(1)
+    since.setHours(0, 0, 0, 0)
+  } else {
+    const period = parseInt(periodParam, 10)
+    since.setDate(since.getDate() - period)
+  }
 
   // Buscar lojas do usuário para validar acesso via RLS
   let query = supabase
@@ -54,7 +60,7 @@ export async function GET(request: NextRequest) {
   const totalMinutes = incidents?.reduce((sum, i) => sum + i.duration_minutes, 0) ?? 0
 
   return NextResponse.json({
-    period_days: period,
+    period_days: periodParam === 'month' ? null : parseInt(periodParam, 10),
     incidents: incidents ?? [],
     summary: {
       total_incidents: incidents?.length ?? 0,

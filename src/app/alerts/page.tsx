@@ -45,6 +45,14 @@ export default function AlertsPage() {
     loadInactivityRules()
   }, [])
 
+  // Escuta evento global disparado pelo RealtimeProvider quando a tabela alerts muda
+  useEffect(() => {
+    const handler = () => loadAlerts()
+    window.addEventListener('pw:alerts-changed', handler)
+    return () => window.removeEventListener('pw:alerts-changed', handler)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const loadUserAndStores = async () => {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -368,30 +376,16 @@ export default function AlertsPage() {
 
   const markAsRead = async (id: string) => {
     const supabase = createClient()
-    const { error } = await supabase
-      .from('alerts')
-      .update({ is_read: true })
-      .eq('id', id)
-
-    if (!error) {
-      loadAlerts()
-    }
+    const { error } = await supabase.from('alerts').update({ is_read: true }).eq('id', id)
+    if (!error) loadAlerts()
   }
 
   const markAllAsRead = async () => {
     const supabase = createClient()
     const unreadIds = alerts.filter((a) => !a.is_read).map((a) => a.id)
-
     if (unreadIds.length === 0) return
-
-    const { error } = await supabase
-      .from('alerts')
-      .update({ is_read: true })
-      .in('id', unreadIds)
-
-    if (!error) {
-      loadAlerts()
-    }
+    const { error } = await supabase.from('alerts').update({ is_read: true }).in('id', unreadIds)
+    if (!error) loadAlerts()
   }
 
   const deleteAlert = async (id: string) => {

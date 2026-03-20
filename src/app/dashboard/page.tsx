@@ -6,7 +6,8 @@ import DashboardLayout from '@/components/dashboard-layout'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Store, Package, AlertTriangle, TrendingUp } from 'lucide-react'
+import { Store, Package, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react'
+import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -16,12 +17,29 @@ export default function DashboardPage() {
     alerts: 0,
     storesOnline: 0,
   })
+  const [monthlyLoss, setMonthlyLoss] = useState({
+    totalLoss: 0,
+    totalIncidents: 0,
+    totalDowntimeMinutes: 0,
+  })
   const [recentAlerts, setRecentAlerts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     checkAdminAndLoadData()
   }, [])
+
+  useRealtimeSubscription({
+    channel: 'dashboard-stores',
+    table: 'stores',
+    onChange: () => loadDashboardData(),
+  })
+
+  useRealtimeSubscription({
+    channel: 'dashboard-alerts',
+    table: 'alerts',
+    onChange: () => loadDashboardData(),
+  })
 
   const checkAdminAndLoadData = async () => {
     const supabase = createClient()
@@ -101,6 +119,21 @@ export default function DashboardPage() {
       setRecentAlerts(alerts || [])
     }
 
+    // Buscar perdas financeiras do mês corrente
+    try {
+      const res = await fetch('/api/stores/financial-loss?period=month')
+      if (res.ok) {
+        const json = await res.json()
+        setMonthlyLoss({
+          totalLoss: json.summary.total_estimated_loss,
+          totalIncidents: json.summary.total_incidents,
+          totalDowntimeMinutes: json.summary.total_downtime_minutes,
+        })
+      }
+    } catch {
+      // silently ignore — card ficará zerado
+    }
+
     setLoading(false)
   }
 
@@ -140,7 +173,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Lojas</CardTitle>
@@ -194,6 +227,27 @@ export default function DashboardPage() {
               </div>
               <p className="text-xs text-muted-foreground">
                 Uptime
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-red-700 dark:text-red-400">
+                Perdas do Mês
+              </CardTitle>
+              <TrendingDown className="h-4 w-4 text-red-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-700 dark:text-red-400">
+                {monthlyLoss.totalLoss.toLocaleString('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL',
+                })}
+              </div>
+              <p className="text-xs text-red-600/70 dark:text-red-400/70">
+                {monthlyLoss.totalIncidents} incidente{monthlyLoss.totalIncidents !== 1 ? 's' : ''} •{' '}
+                {Math.round(monthlyLoss.totalDowntimeMinutes / 60)}h{monthlyLoss.totalDowntimeMinutes % 60}min offline
               </p>
             </CardContent>
           </Card>

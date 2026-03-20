@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/dashboard-layout'
 import { createClient } from '@/lib/supabase/client'
+import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Clock, User, FileText, Settings, Trash2, Plus, Edit } from 'lucide-react'
@@ -23,6 +24,12 @@ export default function ActivityPage() {
   useEffect(() => {
     loadLogs()
   }, [])
+
+  useRealtimeSubscription({
+    channel: 'activity-audit-logs',
+    table: 'audit_logs',
+    onChange: () => loadLogs(),
+  })
 
   const loadLogs = async () => {
     const supabase = createClient()
