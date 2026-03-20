@@ -243,7 +243,7 @@ export default function LandingPage() {
                   <div className="mb-4 w-14 h-14 rounded-2xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <Clock className="h-7 w-7 text-white" />
                   </div>
-                  <CardTitle className="text-xl">Verificação a Cada 5min</CardTitle>
+                  <CardTitle className="text-xl">Verificação a Cada 1min</CardTitle>
                   <CardDescription className="text-base">
                     Monitoramento contínuo ultra-rápido do status da sua loja e produtos em tempo real
                   </CardDescription>
@@ -568,7 +568,7 @@ export default function LandingPage() {
                         <CheckCircle className="h-4 w-4 text-green-600" />
                       </div>
                       <div>
-                        <span className="font-semibold text-base">Verificação a cada 10min</span>
+                        <span className="font-semibold text-base">Verificação a cada 30min</span>
                         <p className="text-sm text-muted-foreground">Monitoramento contínuo 24/7</p>
                       </div>
                     </li>
@@ -674,8 +674,8 @@ export default function LandingPage() {
                         <CheckCircle className="h-4 w-4 text-primary" />
                       </div>
                       <div>
-                        <span className="font-semibold text-base">Verificação a cada 5min</span>
-                        <p className="text-sm text-muted-foreground">Alertas 2x mais rápidos = menos vendas perdidas</p>
+                        <span className="font-semibold text-base">Verificação a cada 15min</span>
+                        <p className="text-sm text-muted-foreground">Alertas mais rápidos = menos vendas perdidas</p>
                       </div>
                     </li>
                     <li className="flex items-start gap-3">
