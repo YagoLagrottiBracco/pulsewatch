@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/dashboard-layout'
 import { createClient } from '@/lib/supabase/client'
-import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -22,17 +21,16 @@ export default function ProductsPage() {
     loadData()
   }, [])
 
-  useRealtimeSubscription({
-    channel: 'products-page-products',
-    table: 'products',
-    onChange: () => loadData(),
-  })
-
-  useRealtimeSubscription({
-    channel: 'products-page-stores',
-    table: 'stores',
-    onChange: () => loadData(),
-  })
+  useEffect(() => {
+    const handler = () => loadData()
+    window.addEventListener('pw:products-changed', handler)
+    window.addEventListener('pw:stores-changed', handler)
+    return () => {
+      window.removeEventListener('pw:products-changed', handler)
+      window.removeEventListener('pw:stores-changed', handler)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const loadData = async () => {
     const supabase = createClient()

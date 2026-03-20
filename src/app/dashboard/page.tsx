@@ -7,7 +7,6 @@ import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Store, Package, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react'
-import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -29,17 +28,16 @@ export default function DashboardPage() {
     checkAdminAndLoadData()
   }, [])
 
-  useRealtimeSubscription({
-    channel: 'dashboard-stores',
-    table: 'stores',
-    onChange: () => loadDashboardData(),
-  })
-
-  useRealtimeSubscription({
-    channel: 'dashboard-alerts',
-    table: 'alerts',
-    onChange: () => loadDashboardData(),
-  })
+  useEffect(() => {
+    const handler = () => loadDashboardData()
+    window.addEventListener('pw:alerts-changed', handler)
+    window.addEventListener('pw:stores-changed', handler)
+    return () => {
+      window.removeEventListener('pw:alerts-changed', handler)
+      window.removeEventListener('pw:stores-changed', handler)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const checkAdminAndLoadData = async () => {
     const supabase = createClient()

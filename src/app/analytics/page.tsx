@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { TrendingUp, Package, DollarSign, AlertCircle } from 'lucide-react'
-import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription'
 
 interface AlertStats {
   date: string
@@ -33,17 +32,16 @@ export default function AnalyticsPage() {
     loadAnalytics()
   }, [timeRange])
 
-  useRealtimeSubscription({
-    channel: 'analytics-alerts',
-    table: 'alerts',
-    onChange: () => loadAnalytics(),
-  })
-
-  useRealtimeSubscription({
-    channel: 'analytics-products',
-    table: 'products',
-    onChange: () => loadAnalytics(),
-  })
+  useEffect(() => {
+    const handler = () => loadAnalytics()
+    window.addEventListener('pw:alerts-changed', handler)
+    window.addEventListener('pw:products-changed', handler)
+    return () => {
+      window.removeEventListener('pw:alerts-changed', handler)
+      window.removeEventListener('pw:products-changed', handler)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const loadAnalytics = async () => {
     setLoading(true)

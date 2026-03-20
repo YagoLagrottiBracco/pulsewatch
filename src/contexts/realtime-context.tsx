@@ -84,24 +84,31 @@ export function RealtimeProvider({
     loadAlertsRef.current = loadAlerts
   })
 
-  // Canal realtime — unico ponto de entrada para mudanças na tabela alerts
+  // Canal único — cobre todas as tabelas relevantes e emite eventos globais para as páginas
   useEffect(() => {
     if (!userId) return
 
     const supabase = createClient()
 
     const channel = supabase
-      .channel(`ctx-alerts-${userId}`)
-      .on(
-        'postgres_changes' as any,
-        { event: '*', schema: 'public', table: 'alerts' },
-        () => {
-          loadAlertsRef.current()
-          setAlertsVersion((v) => v + 1)
-          // Evento global para páginas que ficam fora da árvore do Provider
-          window.dispatchEvent(new CustomEvent('pw:alerts-changed'))
-        }
-      )
+      .channel(`ctx-all-${userId}`)
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'alerts' }, () => {
+        loadAlertsRef.current()
+        setAlertsVersion((v) => v + 1)
+        window.dispatchEvent(new CustomEvent('pw:alerts-changed'))
+      })
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'stores' }, () => {
+        window.dispatchEvent(new CustomEvent('pw:stores-changed'))
+      })
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'products' }, () => {
+        window.dispatchEvent(new CustomEvent('pw:products-changed'))
+      })
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'audit_logs' }, () => {
+        window.dispatchEvent(new CustomEvent('pw:activity-changed'))
+      })
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'downtime_incidents' }, () => {
+        window.dispatchEvent(new CustomEvent('pw:stores-changed'))
+      })
       .subscribe()
 
     return () => {

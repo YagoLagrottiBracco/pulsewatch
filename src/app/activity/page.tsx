@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/dashboard-layout'
 import { createClient } from '@/lib/supabase/client'
-import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Clock, User, FileText, Settings, Trash2, Plus, Edit } from 'lucide-react'
@@ -25,11 +24,12 @@ export default function ActivityPage() {
     loadLogs()
   }, [])
 
-  useRealtimeSubscription({
-    channel: 'activity-audit-logs',
-    table: 'audit_logs',
-    onChange: () => loadLogs(),
-  })
+  useEffect(() => {
+    const handler = () => loadLogs()
+    window.addEventListener('pw:activity-changed', handler)
+    return () => window.removeEventListener('pw:activity-changed', handler)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const loadLogs = async () => {
     const supabase = createClient()
