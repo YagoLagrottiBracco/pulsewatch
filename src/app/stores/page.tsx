@@ -383,7 +383,20 @@ export default function StoresPage() {
     }
 
     // Normalizar domain (remover https:// ou http://)
-    const cleanDomain = formData.domain.replace(/^https?:\/\//, '')
+    const cleanDomain = formData.domain.replace(/^https?:\/\//, '').replace(/\/$/, '')
+
+    // Verificar se já existe uma loja com o mesmo domínio para este usuário
+    const { data: existingStore } = await supabase
+      .from('stores')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('domain', cleanDomain)
+      .maybeSingle()
+
+    if (existingStore) {
+      alert(`Você já possui uma loja cadastrada com o domínio "${cleanDomain}".`)
+      return
+    }
 
     const { data: newStore, error } = await supabase.from('stores').insert({
       user_id: user.id,
