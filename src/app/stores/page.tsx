@@ -350,6 +350,17 @@ export default function StoresPage() {
 
     let platformConfig: any = null
     if (platformKey === 'shopify' && formData.shopifyApiKey && formData.shopifyPassword) {
+      const cleanDomainForValidation = formData.domain.replace(/^https?:\/\//, '').replace(/\/$/, '')
+      const validationRes = await fetch('/api/stores/validate-shopify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain: cleanDomainForValidation, accessToken: formData.shopifyPassword }),
+      })
+      const validation = await validationRes.json()
+      if (!validation.valid) {
+        alert(`Erro ao validar credenciais Shopify: ${validation.error}`)
+        return
+      }
       platformConfig = {
         apiKey: formData.shopifyApiKey,
         accessToken: formData.shopifyPassword,
@@ -451,6 +462,19 @@ export default function StoresPage() {
 
     let platformConfig: any = editingStore.platform_config
     if (currentPlatform === 'shopify' && (formData.shopifyApiKey || formData.shopifyPassword)) {
+      if (formData.shopifyPassword) {
+        const cleanDomainForValidation = formData.domain.replace(/^https?:\/\//, '').replace(/\/$/, '')
+        const validationRes = await fetch('/api/stores/validate-shopify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ domain: cleanDomainForValidation, accessToken: formData.shopifyPassword }),
+        })
+        const validation = await validationRes.json()
+        if (!validation.valid) {
+          alert(`Erro ao validar credenciais Shopify: ${validation.error}`)
+          return
+        }
+      }
       platformConfig = {
         ...platformConfig,
         ...(formData.shopifyApiKey && { apiKey: formData.shopifyApiKey }),
