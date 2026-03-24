@@ -27,11 +27,11 @@ import { NotificationPanel } from '@/components/notification-panel'
 
 function SidebarNav({
   profile,
-  sidebarOpen,
+  expanded,
   onNavigate,
 }: {
   profile: any
-  sidebarOpen: boolean
+  expanded: boolean
   onNavigate?: () => void
 }) {
   const pathname = usePathname()
@@ -51,11 +51,10 @@ function SidebarNav({
   ]
 
   return (
-    <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+    <nav className="flex-1 overflow-y-auto min-h-0 p-4 space-y-2">
       {navigation.map((item) => {
         const Icon = item.icon
         const isActive = pathname === item.href
-
         return (
           <Link
             key={item.name}
@@ -66,11 +65,70 @@ function SidebarNav({
             }`}
           >
             <Icon className="h-5 w-5 shrink-0" />
-            {sidebarOpen && <span>{item.name}</span>}
+            {expanded && <span>{item.name}</span>}
           </Link>
         )
       })}
     </nav>
+  )
+}
+
+// ─── Partes reutilizáveis do sidebar ─────────────────────────────────────────
+
+function SidebarHeader({
+  expanded,
+  onToggle,
+  isMobile,
+}: {
+  expanded: boolean
+  onToggle: () => void
+  isMobile?: boolean
+}) {
+  return (
+    <div className="p-4 border-b flex items-center justify-between shrink-0">
+      <div className="flex items-center gap-2">
+        <LogoIcon className="h-14 w-14 text-primary shrink-0" />
+        {expanded && <span className="font-bold text-lg">PulseWatch</span>}
+      </div>
+      <Button variant="ghost" size="sm" onClick={onToggle}>
+        {isMobile ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+      </Button>
+    </div>
+  )
+}
+
+function SidebarFooter({
+  expanded,
+  user,
+  profile,
+  onLogout,
+}: {
+  expanded: boolean
+  user: any
+  profile: any
+  onLogout: () => void
+}) {
+  return (
+    <div className="p-4 border-t shrink-0 mt-auto">
+      {expanded && user && (
+        <div className="mb-3 text-sm">
+          <p className="font-medium truncate">
+            {profile?.full_name ||
+              user.user_metadata?.full_name ||
+              user.user_metadata?.name ||
+              user.email?.split('@')[0] ||
+              'Usuário'}
+          </p>
+          <p className="text-xs text-muted-foreground truncate">
+            {user.email || 'Sem email'}
+          </p>
+        </div>
+      )}
+      <Button variant="ghost" className="w-full justify-start" onClick={onLogout}>
+        <LogOut className="h-5 w-5 shrink-0" />
+        {expanded && <span className="ml-3">Sair</span>}
+      </Button>
+    </div>
   )
 }
 
@@ -81,33 +139,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-
-  // Desktop: aberto em lg+, colapsado em md, fechado em mobile
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  // Mobile overlay
   const [mobileOpen, setMobileOpen] = useState(false)
 
   useEffect(() => {
-    // Define estado inicial baseado no tamanho da tela
     const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setSidebarOpen(true)
-      } else {
-        setSidebarOpen(false)
-      }
+      setSidebarOpen(window.innerWidth >= 1024)
+      if (window.innerWidth >= 768) setMobileOpen(false)
     }
     handleResize()
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
-
-  // Fecha overlay mobile ao redimensionar para desktop
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        setMobileOpen(false)
-      }
-    }
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
@@ -169,66 +209,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     )
   }
 
-  const sidebarContent = (isMobile: boolean) => (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="p-4 border-b flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
-          <LogoIcon className="h-14 w-14 text-primary shrink-0" />
-          {(sidebarOpen || isMobile) && (
-            <span className="font-bold text-lg">PulseWatch</span>
-          )}
-        </div>
-        {isMobile ? (
-          <Button variant="ghost" size="sm" onClick={() => setMobileOpen(false)}>
-            <X className="h-4 w-4" />
-          </Button>
-        ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-          >
-            <Menu className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
-
-      {/* Nav */}
-      <SidebarNav
-        profile={profile}
-        sidebarOpen={sidebarOpen || isMobile}
-        onNavigate={isMobile ? () => setMobileOpen(false) : undefined}
-      />
-
-      {/* Footer com logout — sempre visível */}
-      <div className="p-4 border-t shrink-0">
-        {(sidebarOpen || isMobile) && user && (
-          <div className="mb-3 text-sm">
-            <p className="font-medium truncate">
-              {profile?.full_name ||
-                user.user_metadata?.full_name ||
-                user.user_metadata?.name ||
-                user.email?.split('@')[0] ||
-                'Usuário'}
-            </p>
-            <p className="text-xs text-muted-foreground truncate">
-              {user.email || 'Sem email'}
-            </p>
-          </div>
-        )}
-        <Button
-          variant="ghost"
-          className="w-full justify-start"
-          onClick={handleLogout}
-        >
-          <LogOut className="h-5 w-5 shrink-0" />
-          {(sidebarOpen || isMobile) && <span className="ml-3">Sair</span>}
-        </Button>
-      </div>
-    </div>
-  )
-
   return (
     <RealtimeProvider userId={user?.id ?? ''}>
       <div className="flex min-h-screen bg-muted/30">
@@ -241,22 +221,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           />
         )}
 
-        {/* Sidebar mobile (overlay) */}
+        {/* Sidebar mobile — aside é o flex container diretamente */}
         <aside
-          className={`fixed inset-y-0 left-0 z-50 w-72 bg-card border-r transition-transform duration-300 md:hidden ${
+          className={`fixed inset-y-0 left-0 z-50 w-72 flex flex-col bg-card border-r transition-transform duration-300 md:hidden ${
             mobileOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
-          {sidebarContent(true)}
+          <SidebarHeader expanded isMobile onToggle={() => setMobileOpen(false)} />
+          <SidebarNav expanded profile={profile} onNavigate={() => setMobileOpen(false)} />
+          <SidebarFooter expanded user={user} profile={profile} onLogout={handleLogout} />
         </aside>
 
-        {/* Sidebar desktop (fixa) */}
+        {/* Sidebar desktop — aside é o flex container diretamente */}
         <aside
-          className={`hidden md:flex flex-col fixed h-screen bg-card border-r transition-all duration-300 ${
+          className={`hidden md:flex flex-col fixed inset-y-0 left-0 bg-card border-r transition-all duration-300 ${
             sidebarOpen ? 'w-64' : 'w-20'
           }`}
         >
-          {sidebarContent(false)}
+          <SidebarHeader
+            expanded={sidebarOpen}
+            onToggle={() => setSidebarOpen(!sidebarOpen)}
+          />
+          <SidebarNav expanded={sidebarOpen} profile={profile} />
+          <SidebarFooter
+            expanded={sidebarOpen}
+            user={user}
+            profile={profile}
+            onLogout={handleLogout}
+          />
         </aside>
 
         {/* Conteúdo principal */}
@@ -267,11 +259,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         >
           {/* Top bar mobile */}
           <header className="md:hidden sticky top-0 z-30 flex items-center gap-3 px-4 h-14 bg-card border-b shrink-0">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setMobileOpen(true)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => setMobileOpen(true)}>
               <Menu className="h-5 w-5" />
             </Button>
             <LogoIcon className="h-8 w-8 text-primary" />
