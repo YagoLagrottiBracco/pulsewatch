@@ -901,7 +901,7 @@ export default function StoresPage() {
                     }
                   />
                   <p className="text-xs text-muted-foreground">
-                    Usado para estimar perdas durante quedas. Deixe vazio para cálculo automático.
+                    Usado para estimar perdas durante quedas. Deixe vazio para usar o padrão de R$&nbsp;50,00/h.
                   </p>
                 </div>
 
