@@ -437,12 +437,12 @@ export default function SettingsPage() {
                   <p className="text-sm text-muted-foreground">
                     Abra o Telegram e envie qualquer mensagem para{' '}
                     <a
-                      href="https://t.me/PulseWatch_Bot"
+                      href="https://t.me/PulseWatchClick_Bot"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-500 underline font-medium"
                     >
-                      @PulseWatch_Bot
+                      @PulseWatchClick_Bot
                     </a>
                     . A conexão será feita automaticamente.
                   </p>
