@@ -44,8 +44,8 @@ export async function sendNotifications(data: NotificationData) {
     }
   }
 
-  // Enviar telegram se habilitado
-  if (profile.telegram_notifications && profile.telegram_chat_id) {
+  // Enviar telegram se habilitado (apenas Premium e Ultimate)
+  if (profile.telegram_notifications && profile.telegram_chat_id && ['premium', 'ultimate'].includes(profile.subscription_tier)) {
     try {
       await sendTelegramNotification(profile.telegram_chat_id, data)
       results.telegram = true
