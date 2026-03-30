@@ -6,7 +6,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-// POST: salva o username e limpa o chat_id antigo
+// POST: salva o username e remove webhook para liberar getUpdates
 export async function POST(request: NextRequest) {
   try {
     const { userId, username } = await request.json()
@@ -17,21 +17,28 @@ export async function POST(request: NextRequest) {
 
     const cleanUsername = username.replace(/^@/, '').toLowerCase()
 
-    await supabase
-      .from('user_profiles')
-      .update({
-        telegram_username: cleanUsername,
-        telegram_chat_id: null,
-        telegram_notifications: false,
-      })
-      .eq('user_id', userId)
+    // Salva username e limpa conexão anterior (best-effort — ignora erro de coluna inexistente)
+    try {
+      await supabase
+        .from('user_profiles')
+        .update({
+          telegram_username: cleanUsername,
+          telegram_chat_id: null,
+          telegram_notifications: false,
+        })
+        .eq('user_id', userId)
+    } catch {
+      // Coluna telegram_username pode não existir ainda — tenta só limpar o chat_id
+      await supabase
+        .from('user_profiles')
+        .update({ telegram_chat_id: null, telegram_notifications: false })
+        .eq('user_id', userId)
+    }
 
-    // Remove o webhook do Telegram (necessário para getUpdates funcionar)
+    // Remove webhook para que getUpdates funcione
     const botToken = process.env.TELEGRAM_BOT_TOKEN
     if (botToken) {
-      await fetch(`https://api.telegram.org/bot${botToken}/deleteWebhook`, {
-        method: 'POST',
-      })
+      await fetch(`https://api.telegram.org/bot${botToken}/deleteWebhook`, { method: 'POST' })
     }
 
     return NextResponse.json({ ok: true })
@@ -41,14 +48,15 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET: faz polling no getUpdates do Telegram e tenta encontrar o username pendente
+// GET: faz polling no getUpdates e tenta encontrar mensagem do username informado
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
+    const username = searchParams.get('username')
 
-    if (!userId) {
-      return NextResponse.json({ error: 'userId é obrigatório' }, { status: 400 })
+    if (!userId || !username) {
+      return NextResponse.json({ error: 'userId e username são obrigatórios' }, { status: 400 })
     }
 
     const botToken = process.env.TELEGRAM_BOT_TOKEN
@@ -56,25 +64,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Bot não configurado' }, { status: 500 })
     }
 
-    // Busca o username pendente do usuário
+    // Verifica se já está conectado no banco
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('telegram_username, telegram_chat_id')
+      .select('telegram_chat_id')
       .eq('user_id', userId)
       .single()
 
-    if (!profile?.telegram_username) {
-      return NextResponse.json({ connected: false, reason: 'Nenhum username pendente' })
-    }
-
-    // Já está conectado
-    if (profile.telegram_chat_id) {
+    if (profile?.telegram_chat_id) {
       return NextResponse.json({ connected: true })
     }
 
     // Busca os últimos 100 updates do Telegram
     const response = await fetch(
-      `https://api.telegram.org/bot${botToken}/getUpdates?limit=100&allowed_updates=["message"]`
+      `https://api.telegram.org/bot${botToken}/getUpdates?limit=100`
     )
     const data = await response.json()
 
@@ -82,8 +85,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ connected: false })
     }
 
-    // Procura por uma mensagem do username pendente
-    const pendingUsername = profile.telegram_username.toLowerCase()
+    // Procura mensagem do username informado
+    const pendingUsername = username.replace(/^@/, '').toLowerCase()
     const match = data.result.find((update: any) => {
       const from = update.message?.from
       return from?.username?.toLowerCase() === pendingUsername
@@ -95,7 +98,7 @@ export async function GET(request: NextRequest) {
 
     const chatId = String(match.message.chat.id)
 
-    // Salva o chat_id e ativa as notificações
+    // Salva o chat_id e ativa notificações
     await supabase
       .from('user_profiles')
       .update({
@@ -104,15 +107,13 @@ export async function GET(request: NextRequest) {
       })
       .eq('user_id', userId)
 
-    // Envia mensagem de boas-vindas
+    // Mensagem de boas-vindas
     await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: chatId,
-        text:
-          `✅ <b>Telegram conectado com sucesso!</b>\n\n` +
-          `Você agora receberá alertas do PulseWatch aqui. 🔔`,
+        text: `✅ <b>Telegram conectado com sucesso!</b>\n\nVocê agora receberá alertas do PulseWatch aqui. 🔔`,
         parse_mode: 'HTML',
       }),
     })

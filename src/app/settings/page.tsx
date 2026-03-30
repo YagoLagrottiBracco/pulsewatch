@@ -69,7 +69,9 @@ export default function SettingsPage() {
     // Polling a cada 3 segundos como fallback
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/telegram/connect?userId=${currentUserId}`)
+        const res = await fetch(
+          `/api/telegram/connect?userId=${currentUserId}&username=${encodeURIComponent(telegramInput)}`
+        )
         const data = await res.json()
         if (data.connected) {
           setTelegramState('connected')
