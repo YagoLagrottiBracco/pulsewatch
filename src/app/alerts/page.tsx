@@ -482,9 +482,9 @@ export default function AlertsPage() {
                       const next = e.target.value
                       setSelectedStoreId(next)
 
-                      const isPremiumOrUltimate = profile?.subscription_tier === 'premium' || profile?.subscription_tier === 'ultimate'
-                      if (next !== 'global' && !isPremiumOrUltimate) {
-                        alert('Regras por loja estão disponíveis apenas no Premium ou Ultimate.')
+                      const isProOrAbove = ['pro', 'business', 'agency'].includes(profile?.subscription_tier || '')
+                      if (next !== 'global' && !isProOrAbove) {
+                        alert('Regras por loja estão disponíveis apenas nos planos Pro, Business e Agency.')
                         setSelectedStoreId('global')
                         return
                       }

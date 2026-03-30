@@ -44,8 +44,8 @@ export async function sendNotifications(data: NotificationData) {
     }
   }
 
-  // Enviar telegram se habilitado (apenas Premium e Ultimate)
-  if (profile.telegram_notifications && profile.telegram_chat_id && ['premium', 'ultimate'].includes(profile.subscription_tier)) {
+  // Enviar telegram se habilitado (todos os planos)
+  if (profile.telegram_notifications && profile.telegram_chat_id) {
     try {
       await sendTelegramNotification(profile.telegram_chat_id, data)
       results.telegram = true
@@ -54,8 +54,8 @@ export async function sendNotifications(data: NotificationData) {
     }
   }
 
-  // Enviar WhatsApp se habilitado (apenas Ultimate)
-  if (profile.whatsapp_notifications && profile.whatsapp_number && profile.subscription_tier === 'ultimate') {
+  // Enviar WhatsApp se habilitado (Pro, Business e Agency)
+  if (profile.whatsapp_notifications && profile.whatsapp_number && ['pro', 'business', 'agency'].includes(profile.subscription_tier)) {
     try {
       const whatsappData: WhatsAppAlertData = {
         storeName: data.storeName,
@@ -71,8 +71,8 @@ export async function sendNotifications(data: NotificationData) {
     }
   }
 
-  // Enviar SMS se habilitado (apenas Ultimate)
-  if (profile.sms_notifications && profile.sms_number && profile.subscription_tier === 'ultimate') {
+  // Enviar SMS se habilitado (Business e Agency)
+  if (profile.sms_notifications && profile.sms_number && ['business', 'agency'].includes(profile.subscription_tier)) {
     try {
       const smsData: SMSAlertData = {
         storeName: data.storeName,

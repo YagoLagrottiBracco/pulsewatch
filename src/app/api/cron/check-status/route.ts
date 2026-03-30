@@ -50,10 +50,10 @@ export async function GET(request: NextRequest) {
         const userTier = userProfile?.subscription_tier || 'free'
         const lastCheck = store.last_check ? new Date(store.last_check) : null
         
-        // Free: verificação a cada 30 minutos
-        // Premium: verificação a cada 15 minutos
-        // Ultimate: verificação a cada 1 minuto
-        const requiredInterval = userTier === 'ultimate' ? 1 : userTier === 'premium' ? 15 : 30
+        // Free: verificação a cada 15 minutos
+        // Pro: verificação a cada 5 minutos
+        // Business/Agency: verificação a cada 1 minuto
+        const requiredInterval = ['business', 'agency'].includes(userTier) ? 1 : userTier === 'pro' ? 5 : 15
         
         if (lastCheck) {
           const minutesSinceLastCheck = (now.getTime() - lastCheck.getTime()) / (1000 * 60)

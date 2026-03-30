@@ -61,12 +61,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user has Ultimate plan
-    if (userProfile?.subscription_tier !== 'ultimate') {
+    // Check if user has Business or Agency plan
+    if (!['business', 'agency'].includes(userProfile?.subscription_tier || '')) {
       return NextResponse.json(
         {
           error: 'Acesso restrito',
-          message: 'Insights com IA são exclusivos para assinantes do plano Ultimate',
+          message: 'Insights com IA são exclusivos para assinantes dos planos Business e Agency',
           upgradeRequired: true,
         },
         { status: 403 }

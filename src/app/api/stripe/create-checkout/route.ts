@@ -8,7 +8,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await request.json()
+    const { userId, plan = 'pro' } = await request.json()
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 })
@@ -51,6 +51,14 @@ export async function POST(request: NextRequest) {
         .eq('user_id', userId)
     }
 
+    // Mapear plano para price_id
+    const priceIdMap: Record<string, string> = {
+      pro: process.env.STRIPE_PRICE_ID_PRO!,
+      business: process.env.STRIPE_PRICE_ID_BUSINESS!,
+      agency: process.env.STRIPE_PRICE_ID_AGENCY!,
+    }
+    const priceId = priceIdMap[plan] || priceIdMap['pro']
+
     // Criar checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -58,7 +66,7 @@ export async function POST(request: NextRequest) {
       payment_method_types: ['card'],
       line_items: [
         {
-          price: process.env.STRIPE_PRICE_ID_PRO_MONTHLY!,
+          price: priceId,
           quantity: 1,
         },
       ],

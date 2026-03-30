@@ -21,11 +21,11 @@ export async function GET(request: NextRequest) {
       .eq('id', user.id)
       .single();
 
-    if (userProfile?.subscription_tier !== 'ultimate') {
+    if (!['business', 'agency'].includes(userProfile?.subscription_tier || '')) {
       return NextResponse.json(
         {
           error: 'Acesso restrito',
-          message: 'Insights com IA são exclusivos para assinantes do plano Ultimate',
+          message: 'Insights com IA são exclusivos para assinantes dos planos Business e Agency',
           upgradeRequired: true,
           insights: [],
           canGenerate: false,
@@ -97,18 +97,18 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
-    // Check if user has Ultimate plan
+    // Check if user has Business or Agency plan
     const { data: userProfile } = await supabase
       .from('user_profiles')
       .select('subscription_tier')
       .eq('id', user.id)
       .single();
 
-    if (userProfile?.subscription_tier !== 'ultimate') {
+    if (!['business', 'agency'].includes(userProfile?.subscription_tier || '')) {
       return NextResponse.json(
         {
           error: 'Acesso restrito',
-          message: 'Insights com IA são exclusivos para assinantes do plano Ultimate',
+          message: 'Insights com IA são exclusivos para assinantes dos planos Business e Agency',
           upgradeRequired: true,
         },
         { status: 403 }

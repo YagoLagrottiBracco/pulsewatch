@@ -26,13 +26,13 @@ export class AIInsightsService {
 
   async generateInsights(data: InsightData): Promise<GeneratedInsight[]> {
     const insights: GeneratedInsight[] = [];
-    const isUltimate = data.userProfile?.subscription_tier === 'ultimate';
+    const isBusinessOrAbove = ['business', 'agency'].includes(data.userProfile?.subscription_tier || '');
 
     // Prepare data summary for AI
     const dataSummary = this.prepareDataSummary(data);
 
     // Generate different types of insights
-    const insightTypes = isUltimate
+    const insightTypes = isBusinessOrAbove
       ? [
           'sales_patterns',
           'stock_forecast',
@@ -51,7 +51,7 @@ export class AIInsightsService {
 
     for (const type of insightTypes) {
       try {
-        const insight = await this.generateInsightByType(type, dataSummary, isUltimate);
+        const insight = await this.generateInsightByType(type, dataSummary, isBusinessOrAbove);
         if (insight) {
           insights.push(insight);
         }
@@ -150,7 +150,7 @@ export class AIInsightsService {
   private async generateInsightByType(
     type: string,
     dataSummary: string,
-    isUltimate: boolean
+    isBusinessOrAbove: boolean
   ): Promise<GeneratedInsight | null> {
     const prompts: { [key: string]: string } = {
       sales_patterns: `Analise os padrões de vendas abaixo e forneça insights acionáveis. Identifique tendências, sazonalidade, dias/horários de pico, e oportunidades de crescimento.`,
@@ -213,7 +213,7 @@ IMPORTANTE: Responda APENAS com um JSON válido no seguinte formato (sem markdow
         dataAnalyzed: {
           generatedAt: new Date().toISOString(),
           dataPoints: dataSummary.length,
-          isUltimate,
+          isBusinessOrAbove,
         },
       };
     } catch (error) {

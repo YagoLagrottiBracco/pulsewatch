@@ -25,9 +25,7 @@ import {
   Globe,
   Lock,
   CreditCard,
-  Timer,
-  Bot,
-  Phone
+  Timer
 } from 'lucide-react'
 import { Metadata } from 'next'
 
@@ -515,107 +513,70 @@ export default function LandingPage() {
               <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-full backdrop-blur-sm">
                 <Sparkles className="h-4 w-4 text-green-600 dark:text-green-400" />
                 <span className="text-sm font-semibold text-green-700 dark:text-green-400">
-                  🎉 Todos os planos incluem 7 dias de teste grátis - sem cartão!
+                  🎉 Pro e Business: 7 dias grátis • Agency: 14 dias grátis - sem cartão!
                 </span>
               </div>
             </div>
 
-            <div className="grid gap-8 md:grid-cols-3 max-w-6xl mx-auto">
+            <div className="grid gap-8 lg:grid-cols-4 md:grid-cols-2 max-w-7xl mx-auto">
               {/* Free Plan */}
               <Card className="relative group hover:shadow-2xl transition-all duration-300 border-2">
                 <CardHeader className="pb-8">
                   <div className="flex items-center justify-between mb-4">
-                    <CardTitle className="text-3xl font-black">Teste Gratuito</CardTitle>
+                    <CardTitle className="text-2xl font-black">Free</CardTitle>
                     <Badge variant="secondary" className="text-xs">
-                      <Timer className="h-3 w-3 mr-1" />
-                      7 Dias
+                      Gratuito
                     </Badge>
                   </div>
                   <CardDescription className="text-base">
-                    Experimente todas as funcionalidades essenciais sem compromisso
+                    Para conhecer o PulseWatch sem compromisso
                   </CardDescription>
                   <div className="mt-6">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-6xl font-black bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">R$ 0</span>
-                      <span className="text-lg text-muted-foreground font-medium">/7 dias</span>
+                      <span className="text-5xl font-black bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">R$ 0</span>
+                      <span className="text-lg text-muted-foreground font-medium">/mês</span>
                     </div>
                     <p className="text-sm text-muted-foreground mt-3 flex items-center gap-2">
                       <Lock className="h-4 w-4 text-green-500" />
-                      <strong className="text-foreground">100% gratuito</strong> - Sem cartão, sem pegadinhas
+                      <strong className="text-foreground">Sem cartão</strong>
                     </p>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="bg-gradient-to-br from-muted to-muted/50 rounded-xl p-4 border">
-                    <p className="text-sm font-medium mb-1">🎯 Ideal para:</p>
-                    <p className="text-xs text-muted-foreground">
-                      Conhecer o PulseWatch e validar se a ferramenta atende suas necessidades antes de investir
-                    </p>
-                  </div>
-
-                  <ul className="space-y-4">
+                  <ul className="space-y-3">
                     <li className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                      </div>
-                      <div>
-                        <span className="font-semibold text-base">1 loja monitorada</span>
-                        <p className="text-sm text-muted-foreground">Perfeito para começar e testar</p>
-                      </div>
+                      <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">1 loja monitorada</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                      </div>
-                      <div>
-                        <span className="font-semibold text-base">Verificação a cada 30min</span>
-                        <p className="text-sm text-muted-foreground">Monitoramento contínuo 24/7</p>
-                      </div>
+                      <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">Verificação a cada 15min</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                      </div>
-                      <div>
-                        <span className="font-semibold text-base">Alertas via email</span>
-                        <p className="text-sm text-muted-foreground">Notificações instantâneas e detalhadas</p>
-                      </div>
+                      <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">Email + Telegram</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                      </div>
-                      <div>
-                        <span className="font-semibold text-base">Controle de estoque</span>
-                        <p className="text-sm text-muted-foreground">Alertas de produtos zerados</p>
-                      </div>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                      </div>
-                      <div>
-                        <span className="font-semibold text-base">Dashboard intuitivo</span>
-                        <p className="text-sm text-muted-foreground">Visão completa da sua loja</p>
-                      </div>
+                      <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">Controle de estoque</span>
                     </li>
                   </ul>
 
                   <div className="pt-6 border-t space-y-3">
                     <Link href="/auth/signup" className="w-full block">
                       <Button variant="outline" className="w-full h-12 text-base font-semibold group-hover:bg-primary/5 border-2" size="lg">
-                        Começar Teste Grátis
+                        Começar Grátis
                         <ArrowRight className="h-4 w-4 ml-2" />
                       </Button>
                     </Link>
                     <p className="text-xs text-center text-muted-foreground">
-                      ✅ Sem instalação • 🚀 Setup em 2min
+                      ✅ Sem cartão • 🚀 Setup em 2min
                     </p>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Premium Plan */}
+              {/* Pro Plan */}
               <Card className="relative group hover:shadow-2xl transition-all duration-300 border-2 border-primary bg-gradient-to-br from-primary/5 via-background to-purple-500/5">
                 <div className="absolute -top-5 left-1/2 -translate-x-1/2 z-10">
                   <Badge className="bg-gradient-to-r from-primary to-purple-600 text-white px-6 py-2 text-sm font-bold shadow-xl">
@@ -625,107 +586,58 @@ export default function LandingPage() {
                 </div>
                 <CardHeader className="pb-8 pt-8">
                   <div className="flex items-center justify-between mb-4">
-                    <CardTitle className="text-3xl font-black">Premium</CardTitle>
+                    <CardTitle className="text-2xl font-black">Pro</CardTitle>
                     <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20">
                       <TrendingUp className="h-3 w-3 mr-1" />
                       Melhor Custo-Benefício
                     </Badge>
                   </div>
                   <CardDescription className="text-base">
-                    Para lojistas sérios que querem maximizar suas vendas e minimizar riscos
+                    Para lojistas sérios que querem minimizar perdas
                   </CardDescription>
                   <div className="mt-6">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-6xl font-black bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">R$ 59,90</span>
+                      <span className="text-5xl font-black bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">R$ 39,90</span>
                       <div className="flex flex-col">
                         <span className="text-lg text-muted-foreground font-medium">/mês</span>
-                        <span className="text-xs text-muted-foreground">~ R$ 2/dia</span>
+                        <span className="text-xs text-muted-foreground">~ R$ 1,30/dia</span>
                       </div>
                     </div>
                     <p className="text-sm mt-3 flex items-center gap-2">
                       <Sparkles className="h-4 w-4 text-primary" />
-                      <strong className="text-foreground">Cancele quando quiser</strong> - Sem multas, sem complicação
+                      <strong className="text-foreground">7 dias grátis</strong> - Cancele quando quiser
                     </p>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="bg-gradient-to-br from-primary/10 to-purple-500/10 border-2 border-primary/20 rounded-xl p-4">
-                    <p className="text-sm font-bold text-primary mb-2 flex items-center gap-2">
-                      <Zap className="h-4 w-4" />
-                      O que torna o Premium especial:
-                    </p>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      Monitore <strong>todas as suas lojas</strong>, receba alertas <strong>2x mais rápidos</strong> e tenha controle total com analytics avançado
-                    </p>
-                  </div>
-                  
-                  <ul className="space-y-4">
+                  <ul className="space-y-3">
                     <li className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="h-4 w-4 text-primary" />
-                      </div>
-                      <div>
-                        <span className="font-semibold text-base">Lojas ilimitadas</span>
-                        <p className="text-sm text-muted-foreground">Monitore quantas lojas quiser sem custo adicional</p>
-                      </div>
+                      <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">Até 5 lojas monitoradas</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="h-4 w-4 text-primary" />
-                      </div>
-                      <div>
-                        <span className="font-semibold text-base">Verificação a cada 15min</span>
-                        <p className="text-sm text-muted-foreground">Alertas mais rápidos = menos vendas perdidas</p>
-                      </div>
+                      <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">Verificação a cada 5min</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="h-4 w-4 text-primary" />
-                      </div>
-                      <div>
-                        <span className="font-semibold text-base">Email + Telegram</span>
-                        <p className="text-sm text-muted-foreground">Notificações em tempo real nos canais disponíveis</p>
-                      </div>
+                      <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">Email + Telegram + WhatsApp</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="h-4 w-4 text-primary" />
-                      </div>
-                      <div>
-                        <span className="font-semibold text-base">Dashboard Pro</span>
-                        <p className="text-sm text-muted-foreground">Visão avançada do desempenho da sua loja</p>
-                      </div>
+                      <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">Regras personalizadas por loja</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="h-4 w-4 text-primary" />
-                      </div>
-                      <div>
-                        <span className="font-semibold text-base">Análise de estoque</span>
-                        <p className="text-sm text-muted-foreground">Relatórios detalhados de inventário</p>
-                      </div>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="h-4 w-4 text-primary" />
-                      </div>
-                      <div>
-                        <span className="font-semibold text-base">Regras personalizadas</span>
-                        <p className="text-sm text-muted-foreground">Crie alertas customizados para seu negócio</p>
-                      </div>
+                      <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">Página de status pública</span>
                     </li>
                   </ul>
 
                   <div className="pt-6 border-t space-y-3">
-                    <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 text-center">
-                      <p className="text-xs font-semibold text-yellow-700 dark:text-yellow-400">
-                        🎉 Oferta Especial: Primeiro ano com 20% OFF!
-                      </p>
-                    </div>
                     <Link href="/auth/signup" className="w-full block">
                       <Button className="w-full h-12 text-base font-bold bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 shadow-xl hover:shadow-2xl transition-all group-hover:scale-105" size="lg">
                         <Sparkles className="h-5 w-5 mr-2" />
-                        Ativar Premium Agora
+                        Começar Pro Grátis
                         <ArrowRight className="h-5 w-5 ml-2" />
                       </Button>
                     </Link>
@@ -736,101 +648,139 @@ export default function LandingPage() {
                 </CardContent>
               </Card>
 
-              <Card className="relative group border-2 border-dashed bg-gradient-to-br from-muted/30 via-background to-muted/10">
-                <div className="absolute -top-5 left-1/2 -translate-x-1/2 z-10">
-                  <Badge className="bg-gradient-to-r from-muted-foreground to-slate-500 text-white px-6 py-2 text-sm font-bold shadow-xl">
-                    <Clock className="h-4 w-4 mr-1" />
-                    EM BREVE
-                  </Badge>
-                </div>
-                <CardHeader className="pb-8 pt-8">
+              {/* Business Plan */}
+              <Card className="relative group hover:shadow-2xl transition-all duration-300 border-2 border-blue-500/50 bg-gradient-to-br from-blue-500/5 via-background to-cyan-500/5">
+                <CardHeader className="pb-8">
                   <div className="flex items-center justify-between mb-4">
-                    <CardTitle className="text-3xl font-black">Ultimate</CardTitle>
-                    <Badge variant="secondary" className="text-xs">
-                      <Bot className="h-3 w-3 mr-1" />
-                      IA + Automações
+                    <CardTitle className="text-2xl font-black">Business</CardTitle>
+                    <Badge variant="secondary" className="text-xs bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20">
+                      <Zap className="h-3 w-3 mr-1" />
+                      Escala
                     </Badge>
                   </div>
                   <CardDescription className="text-base">
-                    Recursos avançados que ainda não foram lançados
+                    Para operações com múltiplas lojas e equipe
                   </CardDescription>
                   <div className="mt-6">
-                    <div className="flex flex-col gap-2">
-                      <span className="text-5xl font-black text-muted-foreground">Em breve</span>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-muted-foreground/60">R$ 159,90</span>
-                        <span className="text-sm text-muted-foreground">/mês</span>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-5xl font-black bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">R$ 89,90</span>
+                      <div className="flex flex-col">
+                        <span className="text-lg text-muted-foreground font-medium">/mês</span>
+                        <span className="text-xs text-muted-foreground">~ R$ 3/dia</span>
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-3">
-                      Recursos avançados com IA e automação completa
+                    <p className="text-sm mt-3 flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-blue-600" />
+                      <strong className="text-foreground">7 dias grátis</strong>
                     </p>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <ul className="space-y-4">
+                  <ul className="space-y-3">
                     <li className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Bot className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <span className="font-semibold text-base">Insights com IA</span>
-                        <p className="text-sm text-muted-foreground">Análises inteligentes e previsões</p>
-                      </div>
+                      <CheckCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">Lojas ilimitadas</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <span className="font-semibold text-base">Alertas via WhatsApp + SMS</span>
-                        <p className="text-sm text-muted-foreground">Notificações em todos os canais</p>
-                      </div>
+                      <CheckCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">Verificação a cada 1min</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <span className="font-semibold text-base">Histórico ilimitado</span>
-                        <p className="text-sm text-muted-foreground">Análise completa de todos os eventos</p>
-                      </div>
+                      <CheckCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">Email + Telegram + WhatsApp + SMS (100/mês)</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Shield className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <span className="font-semibold text-base">Suporte VIP 24/7</span>
-                        <p className="text-sm text-muted-foreground">Atendimento prioritário em até 2h</p>
-                      </div>
+                      <CheckCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">Insights com IA</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Store className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <span className="font-semibold text-base">Todas as plataformas</span>
-                        <p className="text-sm text-muted-foreground">Shopify, WooCommerce, Nuvemshop, VTEX, Magento, BigCommerce, PrestaShop, Spree</p>
-                      </div>
+                      <CheckCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">Multi-usuário (3 usuários)</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Sparkles className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <span className="font-semibold text-base">Automações avançadas</span>
-                        <p className="text-sm text-muted-foreground">Ações automáticas baseadas em eventos</p>
-                      </div>
+                      <CheckCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">Webhooks</span>
                     </li>
                   </ul>
 
                   <div className="pt-6 border-t space-y-3">
-                    <Button disabled className="w-full h-12 text-base font-bold" size="lg">
-                      Em breve
-                    </Button>
+                    <Link href="/auth/signup" className="w-full block">
+                      <Button className="w-full h-12 text-base font-bold bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-lg" size="lg">
+                        Começar Business Grátis
+                        <ArrowRight className="h-5 w-5 ml-2" />
+                      </Button>
+                    </Link>
                     <p className="text-xs text-center text-muted-foreground">
-                      ⏳ Disponível em uma próxima atualização
+                      ✨ 7 dias grátis • ✅ Cancele a qualquer momento
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Agency Plan */}
+              <Card className="relative group hover:shadow-2xl transition-all duration-300 border-2 border-slate-600/50 bg-gradient-to-br from-slate-800/5 via-background to-slate-600/5">
+                <CardHeader className="pb-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <CardTitle className="text-2xl font-black">Agency</CardTitle>
+                    <Badge variant="secondary" className="text-xs">
+                      <Store className="h-3 w-3 mr-1" />
+                      Multi-cliente
+                    </Badge>
+                  </div>
+                  <CardDescription className="text-base">
+                    Para agências que gerenciam lojas de clientes
+                  </CardDescription>
+                  <div className="mt-6">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-5xl font-black text-slate-700 dark:text-slate-300">R$ 199,90</span>
+                      <div className="flex flex-col">
+                        <span className="text-lg text-muted-foreground font-medium">/mês</span>
+                        <span className="text-xs text-muted-foreground">~ R$ 6,70/dia</span>
+                      </div>
+                    </div>
+                    <p className="text-sm mt-3 flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-slate-600" />
+                      <strong className="text-foreground">14 dias grátis</strong>
+                    </p>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <ul className="space-y-3">
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-4 w-4 text-slate-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">Tudo do Business</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-4 w-4 text-slate-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">SMS ilimitado (500/mês)</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-4 w-4 text-slate-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">White-label</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-4 w-4 text-slate-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">Multi-usuário ilimitado</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-4 w-4 text-slate-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">Dashboard multi-cliente</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-4 w-4 text-slate-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">API pública</span>
+                    </li>
+                  </ul>
+
+                  <div className="pt-6 border-t space-y-3">
+                    <Link href="/auth/signup" className="w-full block">
+                      <Button variant="outline" className="w-full h-12 text-base font-semibold border-2" size="lg">
+                        Começar Agency Grátis
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </Link>
+                    <p className="text-xs text-center text-muted-foreground">
+                      ✨ 14 dias grátis • ✅ Cancele a qualquer momento
                     </p>
                   </div>
                 </CardContent>

@@ -254,7 +254,8 @@ export default function AdminUserDetailPage() {
                     >
                       <option value="free">Free</option>
                       <option value="pro">Pro</option>
-                      <option value="ultimate">Ultimate</option>
+                      <option value="business">Business</option>
+                      <option value="agency">Agency</option>
                     </select>
                   </div>
 
@@ -312,11 +313,13 @@ export default function AdminUserDetailPage() {
                     </p>
                     <Badge
                       className={
-                        user.subscription_tier === 'premium'
+                        user.subscription_tier === 'pro'
                           ? 'bg-purple-600'
-                          : user.subscription_tier === 'ultimate'
-                            ? 'bg-slate-700'
-                            : ''
+                          : user.subscription_tier === 'business'
+                            ? 'bg-blue-700'
+                            : user.subscription_tier === 'agency'
+                              ? 'bg-slate-700'
+                              : ''
                       }
                     >
                       {user.subscription_tier?.toUpperCase() || 'FREE'}

@@ -673,19 +673,28 @@ export default function SettingsPage() {
               <div className="space-y-1">
                 <p className="text-sm font-medium">Plano Atual</p>
                 <div className="flex items-center gap-2">
-                  {profile?.subscription_tier === 'premium' ? (
+                  {profile?.subscription_tier === 'pro' ? (
                     <>
                       <Badge className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
-                        PREMIUM
+                        PRO
                       </Badge>
                       {profile?.subscription_status === 'active' && (
                         <span className="text-xs text-green-600">✓ Ativo</span>
                       )}
                     </>
-                  ) : profile?.subscription_tier === 'ultimate' ? (
+                  ) : profile?.subscription_tier === 'business' ? (
+                    <>
+                      <Badge className="bg-gradient-to-r from-blue-700 to-cyan-600 text-white">
+                        BUSINESS
+                      </Badge>
+                      {profile?.subscription_status === 'active' && (
+                        <span className="text-xs text-green-600">✓ Ativo</span>
+                      )}
+                    </>
+                  ) : profile?.subscription_tier === 'agency' ? (
                     <>
                       <Badge className="bg-gradient-to-r from-slate-700 to-slate-900 text-white">
-                        ULTIMATE
+                        AGENCY
                       </Badge>
                       {profile?.subscription_status === 'active' && (
                         <span className="text-xs text-green-600">✓ Ativo</span>
@@ -718,11 +727,11 @@ export default function SettingsPage() {
                     try {
                       const supabase = createClient()
                       const { data: { user } } = await supabase.auth.getUser()
-                      
+
                       const response = await fetch('/api/stripe/create-checkout', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ userId: user?.id }),
+                        body: JSON.stringify({ userId: user?.id, plan: 'pro' }),
                       })
                       
                       const { url } = await response.json()
@@ -736,18 +745,18 @@ export default function SettingsPage() {
                   disabled={saving}
                   className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                 >
-                  ⚡ Upgrade para Premium
+                  ⚡ Upgrade para Pro
                 </Button>
               )}
             </div>
 
-            {(profile?.subscription_tier === 'premium' || profile?.subscription_tier === 'ultimate') && profile?.subscription_ends_at && (
+            {(['pro', 'business', 'agency'].includes(profile?.subscription_tier || '')) && profile?.subscription_ends_at && (
               <div className="text-sm text-muted-foreground">
                 Renovação em: {new Date(profile.subscription_ends_at).toLocaleDateString('pt-BR')}
               </div>
             )}
 
-            {(profile?.subscription_tier === 'premium' || profile?.subscription_tier === 'ultimate') && profile?.stripe_customer_id && (
+            {(['pro', 'business', 'agency'].includes(profile?.subscription_tier || '')) && profile?.stripe_customer_id && (
               <Button
                 variant="outline"
                 onClick={async () => {
@@ -782,15 +791,15 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            {profile?.plan !== 'pro' && (
+            {profile?.subscription_tier === 'free' && (
               <div className="mt-4 p-4 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg border border-purple-200 dark:border-purple-800">
-                <p className="font-semibold mb-2">💎 Benefícios do Plano PRO:</p>
+                <p className="font-semibold mb-2">💎 Benefícios do Plano Pro (R$ 39,90/mês):</p>
                 <ul className="text-sm space-y-1 text-muted-foreground">
-                  <li>✓ Lojas ilimitadas</li>
-                  <li>✓ Produtos ilimitados</li>
-                  <li>✓ Alertas em tempo real</li>
-                  <li>✓ Notificações por Email e Telegram</li>
-                  <li>✓ Suporte prioritário</li>
+                  <li>✓ Até 5 lojas monitoradas</li>
+                  <li>✓ Verificação a cada 5 minutos</li>
+                  <li>✓ Alertas por Email, Telegram e WhatsApp</li>
+                  <li>✓ Regras personalizadas por loja</li>
+                  <li>✓ 7 dias grátis para testar</li>
                 </ul>
               </div>
             )}

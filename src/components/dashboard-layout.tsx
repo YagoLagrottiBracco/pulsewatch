@@ -39,7 +39,7 @@ function SidebarNav({
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-    ...(profile?.subscription_tier === 'ultimate'
+    ...(['business', 'agency'].includes(profile?.subscription_tier || '')
       ? [{ name: 'Insights IA', href: '/dashboard/insights', icon: Sparkles }]
       : []),
     { name: 'Lojas', href: '/stores', icon: Store },

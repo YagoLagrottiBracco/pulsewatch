@@ -36,11 +36,23 @@ export async function POST(request: NextRequest) {
 
         if (!userId) break
 
-        // Atualizar perfil para Pro
+        // Determinar tier com base no price_id da assinatura
+        let newTier = 'pro'
+        if (session.subscription) {
+          const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+          const priceId = subscription.items.data[0]?.price.id
+          if (priceId === process.env.STRIPE_PRICE_ID_BUSINESS) {
+            newTier = 'business'
+          } else if (priceId === process.env.STRIPE_PRICE_ID_AGENCY) {
+            newTier = 'agency'
+          }
+        }
+
         await supabase
           .from('user_profiles')
           .update({
             plan: 'pro',
+            subscription_tier: newTier,
             subscription_status: 'active',
             stripe_subscription_id: session.subscription as string,
           })
@@ -94,6 +106,7 @@ export async function POST(request: NextRequest) {
           .from('user_profiles')
           .update({
             plan: 'free',
+            subscription_tier: 'free',
             subscription_status: 'canceled',
             subscription_ends_at: new Date().toISOString(),
           })

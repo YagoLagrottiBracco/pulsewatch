@@ -319,11 +319,17 @@ export default function StoresPage() {
   const handleAddStore = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const isPremiumOrUltimate = profile?.subscription_tier === 'premium' || profile?.subscription_tier === 'ultimate'
-    const isUltimate = profile?.subscription_tier === 'ultimate'
-    
-    if (!isPremiumOrUltimate && stores.length >= 1) {
-      alert('Seu plano Free permite monitorar apenas 1 loja. Faça upgrade para Premium ou Ultimate para adicionar mais lojas.')
+    const tier = profile?.subscription_tier || 'free'
+    const isProOrAbove = ['pro', 'business', 'agency'].includes(tier)
+    const isBusinessOrAbove = ['business', 'agency'].includes(tier)
+
+    // free: 1 loja, pro: 5 lojas, business/agency: ilimitado
+    const storeLimit = isBusinessOrAbove ? Infinity : isProOrAbove ? 5 : 1
+    if (stores.length >= storeLimit) {
+      const limitMsg = storeLimit === 1
+        ? 'Seu plano Free permite monitorar apenas 1 loja.'
+        : `Seu plano Pro permite monitorar até 5 lojas.`
+      alert(`${limitMsg} Faça upgrade para adicionar mais lojas.`)
       return
     }
 
@@ -335,10 +341,10 @@ export default function StoresPage() {
     // Determinar plataforma (manual > detectada > auto)
     let platformKey = selectedPlatform || detectedPlatform?.platform || null
     
-    // Verificar se plataforma avançada requer Ultimate
+    // Verificar se plataforma avançada requer Business ou superior
     const advancedPlatforms = ['magento', 'bigcommerce', 'prestashop', 'spree']
-    if (platformKey && advancedPlatforms.includes(platformKey) && !isUltimate) {
-      alert(`A plataforma ${platformKey} está disponível apenas no plano Ultimate. Faça upgrade para usar esta integração.`)
+    if (platformKey && advancedPlatforms.includes(platformKey) && !isBusinessOrAbove) {
+      alert(`A plataforma ${platformKey} está disponível apenas nos planos Business e Agency. Faça upgrade para usar esta integração.`)
       return
     }
 
@@ -784,15 +790,18 @@ export default function StoresPage() {
             </p>
           </div>
           {(() => {
-            const isPremiumOrUltimate = profile?.subscription_tier === 'premium' || profile?.subscription_tier === 'ultimate'
-            const atFreeLimit = !isPremiumOrUltimate && stores.length >= 1
+            const tier = profile?.subscription_tier || 'free'
+            const isProOrAbove = ['pro', 'business', 'agency'].includes(tier)
+            const isBusinessOrAbove = ['business', 'agency'].includes(tier)
+            const storeLimit = isBusinessOrAbove ? Infinity : isProOrAbove ? 5 : 1
+            const atLimit = stores.length >= storeLimit
 
-            if (atFreeLimit) {
+            if (atLimit) {
               return (
                 <div className="flex items-center gap-2">
                   <Button disabled>
                     <Plus className="h-4 w-4 mr-2" />
-                    Limite do Free
+                    Limite do Plano
                   </Button>
                   <Link href="/settings">
                     <Button variant="outline">Upgrade</Button>
@@ -811,17 +820,20 @@ export default function StoresPage() {
         </div>
 
         {(() => {
-          const isPremiumOrUltimate = profile?.subscription_tier === 'premium' || profile?.subscription_tier === 'ultimate'
-          const atFreeLimit = !isPremiumOrUltimate && stores.length >= 1
+          const tier = profile?.subscription_tier || 'free'
+          const isProOrAbove = ['pro', 'business', 'agency'].includes(tier)
+          const isBusinessOrAbove = ['business', 'agency'].includes(tier)
+          const storeLimit = isBusinessOrAbove ? Infinity : isProOrAbove ? 5 : 1
+          const atLimit = stores.length >= storeLimit
 
-          if (!atFreeLimit) return null
+          if (!atLimit) return null
 
           return (
             <Card className="border-2 border-dashed">
               <CardHeader>
-                <CardTitle>Você atingiu o limite do plano Free</CardTitle>
+                <CardTitle>Você atingiu o limite do seu plano</CardTitle>
                 <CardDescription>
-                  Faça upgrade para o Premium e monitore quantas lojas quiser.
+                  Faça upgrade para adicionar mais lojas. Pro: até 5 lojas. Business/Agency: ilimitado.
                 </CardDescription>
               </CardHeader>
               <CardContent>
