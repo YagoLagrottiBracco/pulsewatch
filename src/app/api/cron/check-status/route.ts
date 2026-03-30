@@ -85,7 +85,8 @@ export async function GET(request: NextRequest) {
         const checkResult = await checkStoreStatus(store.domain)
         const isOnline = checkResult.isOnline
         const newStatus = isOnline ? 'online' : 'offline'
-        
+        const notificationResults: Array<{ alertType: string; alertCreated: boolean; notifications: Record<string, boolean | string> | null }> = []
+
         // Atualizar status se mudou
         if (store.status !== newStatus) {
           let financialLossMeta: Record<string, unknown> = {}
@@ -155,7 +156,7 @@ export async function GET(request: NextRequest) {
             ? ` Impacto estimado: R$ ${Number(financialLossMeta.estimated_loss).toFixed(2).replace('.', ',')}.`
             : ''
 
-          await createAlertWithNotification(supabase, store, {
+          const statusAlertResult = await createAlertWithNotification(supabase, store, {
             type: isOnline ? 'LOJA_ONLINE' : 'LOJA_OFFLINE',
             severity: isOnline ? 'low' : 'high',
             title: isOnline ? 'Loja Online' : 'Loja Offline',
@@ -164,6 +165,7 @@ export async function GET(request: NextRequest) {
               : `A loja ${store.name} está offline!`,
             metadata: isOnline && Object.keys(financialLossMeta).length ? financialLossMeta : undefined,
           })
+          notificationResults.push({ alertType: isOnline ? 'LOJA_ONLINE' : 'LOJA_OFFLINE', ...statusAlertResult })
         } else {
           // Apenas atualizar última verificação
           await supabase
@@ -218,7 +220,8 @@ export async function GET(request: NextRequest) {
           syncError,
           inactivityAlerts,
           hasPlatformConfig: !!store.platform_config,
-          platform: store.platform
+          platform: store.platform,
+          notifications: notificationResults.length > 0 ? notificationResults : undefined,
         })
       } catch (error) {
         console.error(`Erro ao verificar loja ${store.name}:`, error)
@@ -377,7 +380,7 @@ async function createAlertWithNotification(
     message: string
     metadata?: any
   }
-) {
+): Promise<{ alertCreated: boolean; notifications: Record<string, boolean | string> | null }> {
   // Criar alerta
   const { error } = await supabase.from('alerts').insert({
     store_id: store.id,
@@ -387,18 +390,24 @@ async function createAlertWithNotification(
 
   if (error) {
     console.error('Erro ao criar alerta:', error)
-    return
+    return { alertCreated: false, notifications: null }
   }
 
-  // Enviar notificações (não aguarda para não bloquear)
-  sendNotifications({
-    userId: store.user_id,
-    storeId: store.id,
-    storeName: store.name,
-    alertType: alertData.type,
-    alertTitle: alertData.title,
-    alertMessage: alertData.message,
-  }).catch(err => console.error('Erro ao enviar notificações:', err))
+  // Enviar notificações e aguardar resultado para diagnóstico
+  try {
+    const notificationResult = await sendNotifications({
+      userId: store.user_id,
+      storeId: store.id,
+      storeName: store.name,
+      alertType: alertData.type,
+      alertTitle: alertData.title,
+      alertMessage: alertData.message,
+    })
+    return { alertCreated: true, notifications: notificationResult ?? null }
+  } catch (err: any) {
+    console.error('Erro ao enviar notificações:', err)
+    return { alertCreated: true, notifications: { error: String(err?.message ?? err) } }
+  }
 }
 
 async function syncShopifyProducts(
