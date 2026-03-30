@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Mail, MessageSquare, User, Save, ExternalLink, Phone, MessageCircle } from 'lucide-react'
+import { Mail, MessageSquare, User, Save, Phone, MessageCircle } from 'lucide-react'
 import { logAudit, AuditActions, EntityTypes } from '@/lib/audit-logger'
 
 export default function SettingsPage() {
@@ -23,15 +23,66 @@ export default function SettingsPage() {
     email_notifications: true,
     telegram_notifications: false,
     telegram_chat_id: '',
+    telegram_username: '',
     whatsapp_notifications: false,
     whatsapp_number: '',
     sms_notifications: false,
     sms_number: '',
   })
+  const [telegramInput, setTelegramInput] = useState('')
+  const [telegramState, setTelegramState] = useState<'idle' | 'waiting' | 'connected'>('idle')
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   useEffect(() => {
     loadProfile()
   }, [])
+
+  // Polling + Realtime para detectar conexão do Telegram
+  useEffect(() => {
+    if (telegramState !== 'waiting' || !currentUserId) return
+
+    // Realtime: escuta mudanças no telegram_chat_id
+    const supabase = createClient()
+    const channel = supabase
+      .channel('telegram-connect')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_profiles',
+          filter: `user_id=eq.${currentUserId}`,
+        },
+        (payload: any) => {
+          if (payload.new?.telegram_chat_id) {
+            setTelegramState('connected')
+            setFormData((prev) => ({
+              ...prev,
+              telegram_chat_id: payload.new.telegram_chat_id,
+              telegram_notifications: true,
+            }))
+          }
+        }
+      )
+      .subscribe()
+
+    // Polling a cada 3 segundos como fallback
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/telegram/connect?userId=${currentUserId}`)
+        const data = await res.json()
+        if (data.connected) {
+          setTelegramState('connected')
+          clearInterval(interval)
+        }
+      } catch {}
+    }, 3000)
+
+    return () => {
+      clearInterval(interval)
+      supabase.removeChannel(channel)
+    }
+  }, [telegramState, currentUserId])
 
   const loadProfile = async () => {
     const supabase = createClient()
@@ -39,6 +90,7 @@ export default function SettingsPage() {
 
     if (!user) return
 
+    setCurrentUserId(user.id)
     console.log('User data:', user)
 
     const { data, error } = await supabase
@@ -73,19 +125,20 @@ export default function SettingsPage() {
           email_notifications: newProfile.email_notifications ?? true,
           telegram_notifications: newProfile.telegram_notifications ?? false,
           telegram_chat_id: newProfile.telegram_chat_id || '',
+          telegram_username: newProfile.telegram_username || '',
           whatsapp_notifications: newProfile.whatsapp_notifications ?? false,
           whatsapp_number: newProfile.whatsapp_number || '',
           sms_notifications: newProfile.sms_notifications ?? false,
           sms_number: newProfile.sms_number || '',
         })
       } else {
-        // Fallback: mesmo com erro, mostrar email do usuário
         setFormData({
           full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
           email: user.email || '',
           email_notifications: true,
           telegram_notifications: false,
           telegram_chat_id: '',
+          telegram_username: '',
           whatsapp_notifications: false,
           whatsapp_number: '',
           sms_notifications: false,
@@ -96,23 +149,30 @@ export default function SettingsPage() {
       setProfile(data)
       setFormData({
         full_name: data.full_name || user.user_metadata?.full_name || user.user_metadata?.name || '',
-        email: user.email || '', // Email vem do auth, não do perfil
+        email: user.email || '',
         email_notifications: data.email_notifications ?? true,
         telegram_notifications: data.telegram_notifications ?? false,
         telegram_chat_id: data.telegram_chat_id || '',
+        telegram_username: data.telegram_username || '',
         whatsapp_notifications: data.whatsapp_notifications ?? false,
         whatsapp_number: data.whatsapp_number || '',
         sms_notifications: data.sms_notifications ?? false,
         sms_number: data.sms_number || '',
       })
+      if (data.telegram_chat_id) {
+        setTelegramState('connected')
+        setTelegramInput(data.telegram_username || '')
+      } else if (data.telegram_username) {
+        setTelegramInput(data.telegram_username)
+      }
     } else {
-      // Fallback final: sempre mostrar pelo menos o email
       setFormData({
         full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
         email: user.email || '',
         email_notifications: true,
         telegram_notifications: false,
         telegram_chat_id: '',
+        telegram_username: '',
         whatsapp_notifications: false,
         whatsapp_number: '',
         sms_notifications: false,
@@ -172,8 +232,29 @@ export default function SettingsPage() {
     }
   }
 
-  const getTelegramLink = () => {
-    return 'https://t.me/PulseWatch_Bot'
+  const handleTelegramConnect = async () => {
+    if (!telegramInput.trim() || !currentUserId) return
+
+    await fetch('/api/telegram/connect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: currentUserId, username: telegramInput.trim() }),
+    })
+
+    setTelegramState('waiting')
+  }
+
+  const handleTelegramDisconnect = async () => {
+    if (!currentUserId) return
+    const supabase = createClient()
+    await supabase
+      .from('user_profiles')
+      .update({ telegram_chat_id: null, telegram_username: null, telegram_notifications: false })
+      .eq('user_id', currentUserId)
+
+    setTelegramState('idle')
+    setTelegramInput('')
+    setFormData((prev) => ({ ...prev, telegram_chat_id: '', telegram_username: '', telegram_notifications: false }))
   }
 
   if (loading) {
@@ -307,90 +388,101 @@ export default function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Ativar notificações por Telegram</p>
-                  <p className="text-sm text-muted-foreground">
-                    Mensagens instantâneas no seu celular
-                  </p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.telegram_notifications}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        telegram_notifications: e.target.checked,
-                      })
-                    }
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                </label>
-              </div>
-
-              {formData.telegram_notifications && (
-                <>
-                  {!formData.telegram_chat_id ? (
-                    <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-md space-y-3">
-                      <p className="text-sm font-medium">
-                        Configure seu Telegram
-                      </p>
-                      <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
-                        <li>Abra o Telegram no seu celular</li>
-                        <li>Procure pelo bot @PulseWatch_Bot</li>
-                        <li>Envie o comando /start</li>
-                        <li>Copie o código que o bot enviar</li>
-                        <li>Cole abaixo e salve</li>
-                      </ol>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        asChild
-                      >
-                        <a
-                          href={getTelegramLink()}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          Abrir Telegram
-                        </a>
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="p-4 bg-green-500/10 rounded-md">
+              {telegramState === 'connected' ? (
+                <div className="space-y-3">
+                  <div className="p-4 bg-green-500/10 rounded-md flex items-center justify-between">
+                    <div>
                       <p className="text-sm text-green-600 font-medium">
-                        ✓ Telegram configurado
+                        Telegram conectado
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Chat ID: {formData.telegram_chat_id}
+                        @{formData.telegram_username || telegramInput}
                       </p>
                     </div>
-                  )}
-
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleTelegramDisconnect}
+                    >
+                      Desconectar
+                    </Button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Notificações ativas</p>
+                      <p className="text-sm text-muted-foreground">
+                        Você receberá mensagens diretas no Telegram
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.telegram_notifications}
+                        onChange={(e) =>
+                          setFormData({ ...formData, telegram_notifications: e.target.checked })
+                        }
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
+                  </div>
+                </div>
+              ) : telegramState === 'waiting' ? (
+                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-md space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                    <p className="text-sm font-medium">Aguardando conexão...</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Abra o Telegram e envie qualquer mensagem para{' '}
+                    <a
+                      href="https://t.me/PulseWatch_Bot"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500 underline font-medium"
+                    >
+                      @PulseWatch_Bot
+                    </a>
+                    . A conexão será feita automaticamente.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTelegramState('idle')}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
                   <div className="space-y-2">
-                    <Label htmlFor="telegram_chat_id">
-                      Chat ID do Telegram
-                    </Label>
-                    <Input
-                      id="telegram_chat_id"
-                      value={formData.telegram_chat_id}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          telegram_chat_id: e.target.value,
-                        })
-                      }
-                      placeholder="123456789"
-                    />
+                    <Label htmlFor="telegram_username">Seu usuário do Telegram</Label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
+                        <Input
+                          id="telegram_username"
+                          value={telegramInput}
+                          onChange={(e) => setTelegramInput(e.target.value.replace(/^@/, ''))}
+                          placeholder="seuusuario"
+                          className="pl-7"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={handleTelegramConnect}
+                        disabled={!telegramInput.trim()}
+                      >
+                        Conectar
+                      </Button>
+                    </div>
                     <p className="text-xs text-muted-foreground">
-                      Obtenha este código enviando /start para o bot
+                      Digite seu @username do Telegram e clique em Conectar
                     </p>
                   </div>
-                </>
+                </div>
               )}
             </CardContent>
           </Card>

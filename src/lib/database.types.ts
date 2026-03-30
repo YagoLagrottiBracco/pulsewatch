@@ -16,6 +16,7 @@ export interface Database {
           email: string
           full_name: string | null
           telegram_chat_id: string | null
+          telegram_username: string | null
           email_notifications: boolean
           telegram_notifications: boolean
           onboarding_completed: boolean
@@ -29,6 +30,7 @@ export interface Database {
           email: string
           full_name?: string | null
           telegram_chat_id?: string | null
+          telegram_username?: string | null
           email_notifications?: boolean
           telegram_notifications?: boolean
           onboarding_completed?: boolean
@@ -42,6 +44,7 @@ export interface Database {
           email?: string
           full_name?: string | null
           telegram_chat_id?: string | null
+          telegram_username?: string | null
           email_notifications?: boolean
           telegram_notifications?: boolean
           onboarding_completed?: boolean
