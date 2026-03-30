@@ -59,6 +59,9 @@ export async function POST(request: NextRequest) {
     }
     const priceId = priceIdMap[plan] || priceIdMap['pro']
 
+    // Trial: 7 dias para pro/business, 14 dias para agency
+    const trialDays = plan === 'agency' ? 14 : 7
+
     // Criar checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -70,6 +73,9 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
+      subscription_data: {
+        trial_period_days: trialDays,
+      },
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?success=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?canceled=true`,
       metadata: {
