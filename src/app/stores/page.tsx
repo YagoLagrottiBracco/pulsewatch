@@ -23,7 +23,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Store, Trash2, RefreshCw, Edit, TrendingDown, Clock } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
+import { Plus, Store, Trash2, RefreshCw, Edit, TrendingDown, Clock, ShoppingCart, Zap, AlertTriangle } from 'lucide-react'
+
+const ADVANCED_MONITORING_TIERS = ['pro', 'business', 'agency']
 import { logAudit, AuditActions, EntityTypes } from '@/lib/audit-logger'
 
 function maskBRL(value: string): string {
@@ -65,6 +68,8 @@ export default function StoresPage() {
     vtexAccountName: '',
     vtexAppKey: '',
     vtexAppToken: '',
+    speedThresholdSeconds: '3',
+    checkoutMonitorEnabled: true,
   })
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null)
   const [detecting, setDetecting] = useState(false)
@@ -448,6 +453,8 @@ export default function StoresPage() {
         vtexAccountName: '',
         vtexAppKey: '',
         vtexAppToken: '',
+        speedThresholdSeconds: '3',
+        checkoutMonitorEnabled: true,
       })
       setSelectedPlatform(null)
       setDetectedPlatform(null)
@@ -541,13 +548,18 @@ export default function StoresPage() {
       .eq('id', editingStore.id)
 
     if (!error) {
+      // Save monitor settings separately if user is pro+
+      if (ADVANCED_MONITORING_TIERS.includes(profile?.subscription_tier || 'free')) {
+        await saveMonitorSettings(editingStore.id)
+      }
+
       await logAudit({
         action: AuditActions.STORE_UPDATED,
         entity_type: EntityTypes.STORE,
         entity_id: editingStore.id,
         metadata: { name: formData.name, domain: cleanDomain }
       })
-      
+
       setFormData({
         name: '',
         domain: '',
@@ -562,6 +574,8 @@ export default function StoresPage() {
         vtexAccountName: '',
         vtexAppKey: '',
         vtexAppToken: '',
+        speedThresholdSeconds: '3',
+        checkoutMonitorEnabled: true,
       })
       setSelectedPlatform(null)
       setDetectedPlatform(null)
@@ -587,10 +601,32 @@ export default function StoresPage() {
       vtexAccountName: '',
       vtexAppKey: '',
       vtexAppToken: '',
+      speedThresholdSeconds: String((store.speed_threshold_ms || 3000) / 1000),
+      checkoutMonitorEnabled: store.checkout_monitor_enabled !== false,
     })
     setSelectedPlatform(store.platform)
     setDetectedPlatform({ platform: store.platform })
     setShowAddForm(true)
+  }
+
+  const saveMonitorSettings = async (storeId: string) => {
+    try {
+      const res = await fetch('/api/stores/update-monitors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          storeId,
+          speedThresholdMs: Math.round(Number(formData.speedThresholdSeconds) * 1000),
+          checkoutMonitorEnabled: formData.checkoutMonitorEnabled,
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        console.error('Erro ao salvar monitores:', data.error)
+      }
+    } catch (error) {
+      console.error('Erro ao salvar monitores:', error)
+    }
   }
 
   const cancelEdit = () => {
@@ -609,6 +645,8 @@ export default function StoresPage() {
       vtexAccountName: '',
       vtexAppKey: '',
       vtexAppToken: '',
+      speedThresholdSeconds: '3',
+      checkoutMonitorEnabled: true,
     })
     setSelectedPlatform(null)
     setDetectedPlatform(null)
@@ -1102,6 +1140,91 @@ export default function StoresPage() {
                       </div>
                     </div>
                   </div>
+                )}
+
+                {/* Monitores Avançados — gate: pro+ */}
+                {editingStore && (
+                  ADVANCED_MONITORING_TIERS.includes(profile?.subscription_tier || 'free') ? (
+                    <div className="space-y-4 border-t pt-4 mt-4">
+                      <h3 className="text-sm font-semibold flex items-center gap-2">
+                        <Zap className="h-4 w-4" />
+                        Monitores Avançados
+                      </h3>
+
+                      {/* Toggle de checkout */}
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label className="flex items-center gap-2">
+                            <ShoppingCart className="h-4 w-4" />
+                            Monitor de Checkout
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            Verifica se o carrinho/checkout está acessível (1x/hora)
+                          </p>
+                        </div>
+                        <Switch
+                          checked={formData.checkoutMonitorEnabled}
+                          onCheckedChange={(checked: boolean) =>
+                            setFormData({ ...formData, checkoutMonitorEnabled: checked })
+                          }
+                        />
+                      </div>
+
+                      {/* Threshold de velocidade */}
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4" />
+                          Threshold de Velocidade (segundos)
+                        </Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={10}
+                          step={0.5}
+                          value={formData.speedThresholdSeconds}
+                          onChange={(e) =>
+                            setFormData({ ...formData, speedThresholdSeconds: e.target.value })
+                          }
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Alertar quando a loja demorar mais que {formData.speedThresholdSeconds}s para responder
+                        </p>
+                      </div>
+
+                      {/* Status badges — mostrar apenas se há dados */}
+                      {(editingStore.last_response_time_ms || (editingStore.checkout_status && editingStore.checkout_status !== 'unknown')) && (
+                        <div className="flex flex-wrap gap-3 pt-2">
+                          {editingStore.last_response_time_ms != null && (
+                            <div className="flex items-center gap-1.5 text-sm">
+                              <span className="text-muted-foreground">Resposta:</span>
+                              <Badge variant={editingStore.last_response_time_ms > (editingStore.speed_threshold_ms || 3000) ? 'destructive' : 'default'}>
+                                {editingStore.last_response_time_ms}ms
+                              </Badge>
+                            </div>
+                          )}
+                          {editingStore.checkout_status && editingStore.checkout_status !== 'unknown' && (
+                            <div className="flex items-center gap-1.5 text-sm">
+                              <span className="text-muted-foreground">Checkout:</span>
+                              <Badge variant={editingStore.checkout_status === 'ok' ? 'default' : 'destructive'}>
+                                {editingStore.checkout_status === 'ok' ? 'OK' : 'ERRO'}
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="border-t pt-4 mt-4 opacity-60">
+                      <h3 className="text-sm font-semibold flex items-center gap-2 mb-1">
+                        <Zap className="h-4 w-4" />
+                        Monitores Avançados
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Disponível no plano Pro ou superior.{' '}
+                        <Link href="/settings" className="underline">Fazer upgrade</Link>
+                      </p>
+                    </div>
+                  )
                 )}
 
                 <div className="flex gap-2">

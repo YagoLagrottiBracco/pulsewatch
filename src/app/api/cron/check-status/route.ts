@@ -6,6 +6,8 @@ import { TrayClient } from '@/integrations/tray'
 import { VtexClient } from '@/integrations/vtex'
 import { calculateFinancialLoss, resolveRevenuePerHour } from '@/services/financial-loss'
 
+const ADVANCED_MONITORING_TIERS = ['pro', 'business', 'agency']
+
 // Esta rota é chamada pelo Vercel Cron a cada 10 minutos
 export async function GET(request: NextRequest) {
   try {
@@ -174,6 +176,16 @@ export async function GET(request: NextRequest) {
             .eq('id', store.id)
         }
 
+        // Monitores avançados (pro+) — velocidade, erros HTTP, checkout
+        if (isOnline && ADVANCED_MONITORING_TIERS.includes(userTier)) {
+          try {
+            const advancedResults = await checkAdvancedMonitors(supabase, store, checkResult)
+            notificationResults.push(...advancedResults)
+          } catch (advError) {
+            console.error(`Erro nos monitores avançados da loja ${store.name}:`, advError)
+          }
+        }
+
         // Sincronizar produtos se a loja estiver online e tiver integração configurada
         let productsSynced = 0
         let syncError = null
@@ -214,11 +226,13 @@ export async function GET(request: NextRequest) {
           status: newStatus,
           statusCode: checkResult.statusCode,
           method: checkResult.method,
+          responseTimeMs: checkResult.responseTimeMs,
           error: checkResult.error,
           changed: store.status !== newStatus,
           productsSynced,
           syncError,
           inactivityAlerts,
+          advancedMonitors: ADVANCED_MONITORING_TIERS.includes(userTier),
           hasPlatformConfig: !!store.platform_config,
           platform: store.platform,
           notifications: notificationResults.length > 0 ? notificationResults : undefined,
@@ -253,6 +267,7 @@ interface CheckResult {
   statusCode?: number
   method?: string
   error?: string
+  responseTimeMs?: number
 }
 
 type StockAlertConfig = {
@@ -1141,18 +1156,21 @@ async function checkStoreStatus(url: string): Promise<CheckResult> {
 
   // Tentar HEAD primeiro (mais rápido)
   try {
+    const t0Head = performance.now()
     const headResponse = await fetch(normalizedUrl, {
       method: 'HEAD',
       redirect: 'follow',
       signal: AbortSignal.timeout(10000), // 10s timeout
     })
-    
+    const headResponseTimeMs = Math.round(performance.now() - t0Head)
+
     if (headResponse.ok) {
       return {
         isOnline: true,
         normalizedUrl,
         statusCode: headResponse.status,
-        method: 'HEAD'
+        method: 'HEAD',
+        responseTimeMs: headResponseTimeMs,
       }
     }
   } catch (headError) {
@@ -1161,6 +1179,7 @@ async function checkStoreStatus(url: string): Promise<CheckResult> {
 
   // Tentar GET
   try {
+    const t0Get = performance.now()
     const getResponse = await fetch(normalizedUrl, {
       method: 'GET',
       redirect: 'follow',
@@ -1169,14 +1188,16 @@ async function checkStoreStatus(url: string): Promise<CheckResult> {
         'User-Agent': 'PulseWatch-Monitor/1.0',
       },
     })
-    
+    const getResponseTimeMs = Math.round(performance.now() - t0Get)
+
     const isOnline = getResponse.ok && getResponse.status < 400
-    
+
     return {
       isOnline,
       normalizedUrl,
       statusCode: getResponse.status,
-      method: 'GET'
+      method: 'GET',
+      responseTimeMs: getResponseTimeMs,
     }
   } catch (error) {
     console.error(`Failed to check ${url}:`, error)
@@ -1186,4 +1207,150 @@ async function checkStoreStatus(url: string): Promise<CheckResult> {
       error: String(error)
     }
   }
+}
+
+// ============================================================
+// Monitores Avançados (Phase 2)
+// ============================================================
+
+async function shouldCreateAlert(
+  supabase: any,
+  storeId: string,
+  alertType: string,
+  dedupeWindowMinutes = 30
+): Promise<boolean> {
+  const cutoff = new Date(Date.now() - dedupeWindowMinutes * 60 * 1000).toISOString()
+  const { data } = await supabase
+    .from('alerts')
+    .select('id')
+    .eq('store_id', storeId)
+    .eq('type', alertType)
+    .gte('created_at', cutoff)
+    .limit(1)
+  return !data || data.length === 0
+}
+
+function getCheckoutUrl(platform: string | null, domain: string): string {
+  const base = `https://${domain}`
+  switch (platform) {
+    case 'shopify':     return `${base}/cart`
+    case 'woocommerce': return `${base}/carrinho`
+    case 'nuvemshop':   return `${base}/checkout`
+    case 'tray':        return `${base}/checkout`
+    case 'vtex':        return `${base}/checkout`
+    default:            return `${base}/cart`
+  }
+}
+
+async function checkCheckoutUrl(
+  platform: string | null,
+  domain: string
+): Promise<{ ok: boolean; statusCode?: number; url: string }> {
+  const url = getCheckoutUrl(platform, domain)
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      redirect: 'follow',
+      signal: AbortSignal.timeout(8000),
+      headers: { 'User-Agent': 'PulseWatch-Monitor/1.0' },
+    })
+    // WooCommerce fallback: if /carrinho returns 404, try /cart
+    if (platform === 'woocommerce' && response.status === 404) {
+      const fallbackUrl = `https://${domain}/cart`
+      const fallbackResponse = await fetch(fallbackUrl, {
+        method: 'GET',
+        redirect: 'follow',
+        signal: AbortSignal.timeout(8000),
+        headers: { 'User-Agent': 'PulseWatch-Monitor/1.0' },
+      })
+      return {
+        ok: fallbackResponse.ok,
+        statusCode: fallbackResponse.status,
+        url: fallbackUrl,
+      }
+    }
+    return { ok: response.ok, statusCode: response.status, url }
+  } catch (error) {
+    return { ok: false, url }
+  }
+}
+
+async function checkAdvancedMonitors(
+  supabase: any,
+  store: any,
+  checkResult: CheckResult
+): Promise<Array<{ alertType: string; alertCreated: boolean; notifications: Record<string, boolean | string> | null }>> {
+  const alerts: Array<{ alertType: string; alertCreated: boolean; notifications: Record<string, boolean | string> | null }> = []
+
+  try {
+    // 1. Monitor de velocidade — LOJA_LENTA
+    if (checkResult.responseTimeMs !== undefined) {
+      const threshold = store.speed_threshold_ms || 3000
+      // Persistir ultimo response time independente de alerta
+      await supabase.from('stores').update({ last_response_time_ms: checkResult.responseTimeMs }).eq('id', store.id)
+
+      if (checkResult.responseTimeMs > threshold) {
+        const canCreate = await shouldCreateAlert(supabase, store.id, 'LOJA_LENTA')
+        if (canCreate) {
+          const result = await createAlertWithNotification(supabase, store, {
+            type: 'LOJA_LENTA',
+            severity: 'medium',
+            title: 'Loja Lenta',
+            message: `A loja ${store.name} está respondendo lentamente (${checkResult.responseTimeMs}ms, threshold: ${threshold}ms).`,
+            metadata: { responseTimeMs: checkResult.responseTimeMs, thresholdMs: threshold },
+          })
+          alerts.push({ alertType: 'LOJA_LENTA', ...result })
+        }
+      }
+    }
+
+    // 2. Monitor de erros HTTP — ERRO_PAGINA
+    // Apenas quando loja responde com 4xx/5xx (não quando offline/timeout)
+    if (checkResult.statusCode && checkResult.statusCode >= 400) {
+      const severity = checkResult.statusCode >= 500 ? 'high' : 'medium'
+      const canCreate = await shouldCreateAlert(supabase, store.id, 'ERRO_PAGINA')
+      if (canCreate) {
+        const result = await createAlertWithNotification(supabase, store, {
+          type: 'ERRO_PAGINA',
+          severity,
+          title: 'Erro na Página Principal',
+          message: `A loja ${store.name} está retornando erro ${checkResult.statusCode} na página principal.`,
+          metadata: { statusCode: checkResult.statusCode },
+        })
+        alerts.push({ alertType: 'ERRO_PAGINA', ...result })
+      }
+    }
+
+    // 3. Monitor de checkout — CHECKOUT_OFFLINE (throttle 1x/hora)
+    if (store.checkout_monitor_enabled !== false) {
+      const shouldCheck = !store.last_checkout_check ||
+        (Date.now() - new Date(store.last_checkout_check).getTime()) > 60 * 60 * 1000
+
+      if (shouldCheck) {
+        const checkoutResult = await checkCheckoutUrl(store.platform, store.domain)
+        await supabase.from('stores').update({
+          last_checkout_check: new Date().toISOString(),
+          checkout_status: checkoutResult.ok ? 'ok' : 'error',
+        }).eq('id', store.id)
+
+        if (!checkoutResult.ok) {
+          const canCreate = await shouldCreateAlert(supabase, store.id, 'CHECKOUT_OFFLINE')
+          if (canCreate) {
+            const result = await createAlertWithNotification(supabase, store, {
+              type: 'CHECKOUT_OFFLINE',
+              severity: 'critical',
+              title: 'Checkout Offline',
+              message: `O checkout da loja ${store.name} está com problemas! URL de checkout retornou erro ${checkoutResult.statusCode || 'desconhecido'}.`,
+              metadata: { checkoutUrl: checkoutResult.url, statusCode: checkoutResult.statusCode },
+            })
+            alerts.push({ alertType: 'CHECKOUT_OFFLINE', ...result })
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error(`Erro nos monitores avançados da loja ${store.name}:`, error)
+  }
+
+  return alerts
 }
