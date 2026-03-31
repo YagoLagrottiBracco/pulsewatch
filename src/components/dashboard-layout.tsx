@@ -19,6 +19,7 @@ import {
   Bell,
   Activity,
   Sparkles,
+  Users,
 } from 'lucide-react'
 import { RealtimeProvider } from '@/contexts/realtime-context'
 import { NotificationPanel } from '@/components/notification-panel'
@@ -41,6 +42,9 @@ function SidebarNav({
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
     ...(['business', 'agency'].includes(profile?.subscription_tier || '')
       ? [{ name: 'Insights IA', href: '/dashboard/insights', icon: Sparkles }]
+      : []),
+    ...(['business', 'agency'].includes(profile?.subscription_tier || '')
+      ? [{ name: 'Time', href: '/team', icon: Users }]
       : []),
     { name: 'Lojas', href: '/stores', icon: Store },
     { name: 'Produtos', href: '/products', icon: Package },

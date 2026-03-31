@@ -88,6 +88,13 @@ export async function sendNotifications(data: NotificationData) {
     }
   }
 
+  // Phase 5: Notificar membros do time via roteamento de alertas
+  try {
+    await notifyTeamMembers(supabase, data)
+  } catch (error) {
+    console.error('Erro ao notificar membros do time:', error)
+  }
+
   return results
 }
 
@@ -153,6 +160,69 @@ async function sendEmailNotification(email: string, data: NotificationData) {
       </html>
     `,
   })
+}
+
+/**
+ * Notifica membros ativos do time do owner, respeitando regras de roteamento.
+ */
+async function notifyTeamMembers(supabase: any, data: NotificationData) {
+  // Buscar membros ativos do time
+  const { data: members } = await supabase
+    .from('account_members')
+    .select('id, user_id, email')
+    .eq('account_owner_id', data.userId)
+    .eq('status', 'active')
+
+  if (!members || members.length === 0) return
+
+  for (const member of members) {
+    // Verificar regras de roteamento
+    const { data: routing } = await supabase
+      .from('alert_routing')
+      .select('*')
+      .eq('member_id', member.id)
+      .or(`store_id.eq.${data.storeId},store_id.is.null`)
+      .eq('is_active', true)
+      .limit(1)
+      .single()
+
+    // Se há regra de roteamento, verificar se o tipo do alerta está incluído
+    if (routing) {
+      const allowedTypes = routing.alert_types as string[] | null
+      if (allowedTypes && allowedTypes.length > 0 && !allowedTypes.includes(data.alertType)) {
+        continue // Tipo não está na lista, pular
+      }
+    }
+
+    // Buscar perfil do membro para enviar notificações
+    if (!member.user_id) continue // Convite pendente, sem user_id
+
+    const { data: memberProfile } = await supabase
+      .from('user_profiles')
+      .select('email, email_notifications, telegram_chat_id, telegram_notifications')
+      .eq('user_id', member.user_id)
+      .single()
+
+    if (!memberProfile) continue
+
+    // Enviar email ao membro
+    if (memberProfile.email_notifications) {
+      try {
+        await sendEmailNotification(memberProfile.email, data)
+      } catch (error) {
+        console.error(`Erro ao enviar email para membro ${member.email}:`, error)
+      }
+    }
+
+    // Enviar telegram ao membro
+    if (memberProfile.telegram_notifications && memberProfile.telegram_chat_id) {
+      try {
+        await sendTelegramNotification(memberProfile.telegram_chat_id, data)
+      } catch (error) {
+        console.error(`Erro ao enviar telegram para membro ${member.email}:`, error)
+      }
+    }
+  }
 }
 
 async function sendTelegramNotification(chatId: string, data: NotificationData) {
