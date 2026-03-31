@@ -6,7 +6,25 @@ import DashboardLayout from '@/components/dashboard-layout'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Store, Package, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react'
+import { Store, Package, AlertTriangle, TrendingUp, TrendingDown, Shield, Clock, PackageX, ArrowUp, ArrowDown, Minus } from 'lucide-react'
+
+interface UptimeStore {
+  storeId: string
+  storeName: string
+  uptimePercent: number
+  totalDowntimeMinutes: number
+  status: string
+}
+
+interface StockForecastItem {
+  productId: string
+  productName: string
+  storeName: string
+  currentStock: number
+  avgDailySales: number
+  daysUntilZero: number | null
+  urgency: 'critical' | 'warning' | 'ok'
+}
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -23,6 +41,20 @@ export default function DashboardPage() {
   })
   const [recentAlerts, setRecentAlerts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Phase 4: new state
+  const [weekComparison, setWeekComparison] = useState({
+    alertsThisWeek: 0,
+    alertsLastWeek: 0,
+    ordersThisWeek: 0,
+    ordersLastWeek: 0,
+  })
+  const [uptimeData, setUptimeData] = useState<{
+    stores: UptimeStore[]
+    overallUptimePercent: number
+  } | null>(null)
+  const [stockForecasts, setStockForecasts] = useState<StockForecastItem[]>([])
+  const [userTier, setUserTier] = useState('free')
 
   useEffect(() => {
     checkAdminAndLoadData()
@@ -67,6 +99,16 @@ export default function DashboardPage() {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) return
+
+    // Buscar tier do usuário
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('subscription_tier')
+      .eq('user_id', user.id)
+      .single()
+
+    const tier = profile?.subscription_tier || 'free'
+    setUserTier(tier)
 
     // Buscar lojas do usuário primeiro
     const { data: userStores } = await supabase
@@ -129,7 +171,72 @@ export default function DashboardPage() {
         })
       }
     } catch {
-      // silently ignore — card ficará zerado
+      // silently ignore
+    }
+
+    // Phase 4: Comparativo semanal
+    if (storeIds.length > 0) {
+      const now = new Date()
+      const thisWeekStart = new Date(now)
+      thisWeekStart.setDate(now.getDate() - 7)
+      const lastWeekStart = new Date(thisWeekStart)
+      lastWeekStart.setDate(lastWeekStart.getDate() - 7)
+
+      const [thisWeekAlerts, lastWeekAlerts, thisWeekOrders, lastWeekOrders] = await Promise.all([
+        supabase
+          .from('alerts')
+          .select('*', { count: 'exact', head: true })
+          .in('store_id', storeIds)
+          .gte('created_at', thisWeekStart.toISOString()),
+        supabase
+          .from('alerts')
+          .select('*', { count: 'exact', head: true })
+          .in('store_id', storeIds)
+          .gte('created_at', lastWeekStart.toISOString())
+          .lt('created_at', thisWeekStart.toISOString()),
+        supabase
+          .from('orders')
+          .select('*', { count: 'exact', head: true })
+          .in('store_id', storeIds)
+          .gte('order_date', thisWeekStart.toISOString()),
+        supabase
+          .from('orders')
+          .select('*', { count: 'exact', head: true })
+          .in('store_id', storeIds)
+          .gte('order_date', lastWeekStart.toISOString())
+          .lt('order_date', thisWeekStart.toISOString()),
+      ])
+
+      setWeekComparison({
+        alertsThisWeek: thisWeekAlerts.count || 0,
+        alertsLastWeek: lastWeekAlerts.count || 0,
+        ordersThisWeek: thisWeekOrders.count || 0,
+        ordersLastWeek: lastWeekOrders.count || 0,
+      })
+    }
+
+    // Phase 4: Uptime SLA
+    try {
+      const res = await fetch('/api/uptime-sla')
+      if (res.ok) {
+        const json = await res.json()
+        setUptimeData(json)
+      }
+    } catch {
+      // silently ignore
+    }
+
+    // Phase 4: Stock Forecast (business+ only)
+    if (['business', 'agency'].includes(tier)) {
+      try {
+        const res = await fetch('/api/stock-forecast')
+        if (res.ok) {
+          const json = await res.json()
+          setStockForecasts(json.forecasts || [])
+        }
+      } catch {
+        // silently ignore
+      }
     }
 
     setLoading(false)
@@ -150,6 +257,32 @@ export default function DashboardPage() {
     }
   }
 
+  const getTrendInfo = (current: number, previous: number) => {
+    if (previous === 0 && current === 0) return { icon: <Minus className="h-3 w-3" />, text: 'Estável', color: 'text-muted-foreground' }
+    if (previous === 0) return { icon: <ArrowUp className="h-3 w-3" />, text: 'Novo', color: 'text-blue-600' }
+    const percent = Math.round(((current - previous) / previous) * 100)
+    if (percent > 5) return { icon: <ArrowUp className="h-3 w-3" />, text: `+${percent}%`, color: 'text-red-600' }
+    if (percent < -5) return { icon: <ArrowDown className="h-3 w-3" />, text: `${percent}%`, color: 'text-green-600' }
+    return { icon: <Minus className="h-3 w-3" />, text: 'Estável', color: 'text-muted-foreground' }
+  }
+
+  const getUptimeColor = (percent: number) => {
+    if (percent >= 99.9) return 'text-green-600'
+    if (percent >= 99) return 'text-blue-600'
+    if (percent >= 95) return 'text-yellow-600'
+    return 'text-red-600'
+  }
+
+  const getUptimeBgColor = (status: string) => {
+    switch (status) {
+      case 'excellent': return 'bg-green-500'
+      case 'good': return 'bg-blue-500'
+      case 'degraded': return 'bg-yellow-500'
+      case 'poor': return 'bg-red-500'
+      default: return 'bg-gray-500'
+    }
+  }
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -159,6 +292,16 @@ export default function DashboardPage() {
       </DashboardLayout>
     )
   }
+
+  const alertTrend = getTrendInfo(weekComparison.alertsThisWeek, weekComparison.alertsLastWeek)
+  // For orders, invert colors — more orders is good
+  const orderTrend = (() => {
+    const t = getTrendInfo(weekComparison.ordersThisWeek, weekComparison.ordersLastWeek)
+    // Swap colors: green for up (good), red for down (bad)
+    if (t.text.startsWith('+')) return { ...t, color: 'text-green-600' }
+    if (t.text.startsWith('-')) return { ...t, color: 'text-red-600' }
+    return t
+  })()
 
   return (
     <DashboardLayout>
@@ -251,6 +394,127 @@ export default function DashboardPage() {
           </Card>
         </div>
 
+        {/* Phase 4: Weekly Comparison */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Alertas - Semana</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{weekComparison.alertsThisWeek}</div>
+              <div className={`flex items-center gap-1 text-xs ${alertTrend.color}`}>
+                {alertTrend.icon}
+                <span>{alertTrend.text} vs semana anterior ({weekComparison.alertsLastWeek})</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pedidos - Semana</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{weekComparison.ordersThisWeek}</div>
+              <div className={`flex items-center gap-1 text-xs ${orderTrend.color}`}>
+                {orderTrend.icon}
+                <span>{orderTrend.text} vs semana anterior ({weekComparison.ordersLastWeek})</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Phase 4: Uptime SLA */}
+        {uptimeData && uptimeData.stores.length > 0 && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="h-5 w-5" />
+                    Uptime / SLA Mensal
+                  </CardTitle>
+                  <CardDescription>
+                    Disponibilidade das suas lojas no mês atual
+                  </CardDescription>
+                </div>
+                <div className={`text-3xl font-bold ${getUptimeColor(uptimeData.overallUptimePercent)}`}>
+                  {uptimeData.overallUptimePercent}%
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {uptimeData.stores.map((store) => (
+                  <div key={store.storeId} className="flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full ${getUptimeBgColor(store.status)}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{store.storeName}</p>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm">
+                      {store.totalDowntimeMinutes > 0 && (
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {store.totalDowntimeMinutes}min offline
+                        </span>
+                      )}
+                      <span className={`font-semibold ${getUptimeColor(store.uptimePercent)}`}>
+                        {store.uptimePercent}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Phase 4: Stock Forecast (business+ only) */}
+        {['business', 'agency'].includes(userTier) && stockForecasts.length > 0 && (
+          <Card className="border-orange-200 bg-orange-50 dark:border-orange-900 dark:bg-orange-950/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-orange-700 dark:text-orange-400">
+                <PackageX className="h-5 w-5" />
+                Previsão de Estoque
+              </CardTitle>
+              <CardDescription className="text-orange-600/70 dark:text-orange-400/70">
+                Produtos que podem ficar sem estoque em breve
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {stockForecasts.slice(0, 5).map((item) => (
+                  <div key={item.productId} className="flex items-center justify-between border-b border-orange-200 dark:border-orange-800 pb-3 last:border-0 last:pb-0">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">{item.productName}</p>
+                      <p className="text-xs text-muted-foreground">{item.storeName}</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="flex items-center gap-2">
+                        <Badge className={
+                          item.urgency === 'critical'
+                            ? 'bg-red-600 text-white'
+                            : item.urgency === 'warning'
+                            ? 'bg-yellow-600 text-white'
+                            : 'bg-green-600 text-white'
+                        }>
+                          {item.daysUntilZero !== null
+                            ? `~${item.daysUntilZero} dia${item.daysUntilZero !== 1 ? 's' : ''}`
+                            : 'N/A'}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {item.currentStock} un. • {item.avgDailySales}/dia
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Recent Alerts */}
         <Card>
           <CardHeader>
@@ -274,7 +538,7 @@ export default function DashboardPage() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         {getSeverityBadge(alert.severity)}
-                        {!alert.is_read && 
+                        {!alert.is_read &&
                           new Date().getTime() - new Date(alert.created_at).getTime() < 24 * 60 * 60 * 1000 && (
                           <Badge className="bg-blue-600 text-white">NOVO</Badge>
                         )}

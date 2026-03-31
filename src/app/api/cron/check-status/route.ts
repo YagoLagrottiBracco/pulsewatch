@@ -8,6 +8,7 @@ import { MercadoLivreClient } from '@/integrations/mercadolivre'
 import { ShopeeClient } from '@/integrations/shopee'
 import { calculateFinancialLoss, resolveRevenuePerHour } from '@/services/financial-loss'
 import { monitorGatewaysAndAlert } from '@/services/gateway-monitor'
+import { recordUptimeSnapshot } from '@/services/uptime-sla'
 
 const ADVANCED_MONITORING_TIERS = ['pro', 'business', 'agency']
 
@@ -224,6 +225,13 @@ export async function GET(request: NextRequest) {
           inactivityAlerts = await checkInactiveProducts(supabase, store, inactivityConfig)
         } catch (error) {
           console.error(`Erro ao verificar produtos inativos da loja ${store.name}:`, error)
+        }
+
+        // Registrar snapshot de uptime diário
+        try {
+          await recordUptimeSnapshot(supabase, store.id, isOnline, checkResult.responseTimeMs ?? null)
+        } catch (error) {
+          console.error(`Erro ao registrar uptime snapshot para ${store.name}:`, error)
         }
 
         results.push({
