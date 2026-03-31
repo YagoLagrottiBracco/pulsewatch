@@ -9,6 +9,8 @@ import { ShopeeClient } from '@/integrations/shopee'
 import { calculateFinancialLoss, resolveRevenuePerHour } from '@/services/financial-loss'
 import { monitorGatewaysAndAlert } from '@/services/gateway-monitor'
 import { recordUptimeSnapshot } from '@/services/uptime-sla'
+import { triggerWebhooks } from '@/services/webhooks'
+import { isInMaintenanceWindow } from '@/services/maintenance'
 
 const ADVANCED_MONITORING_TIERS = ['pro', 'business', 'agency']
 
@@ -93,8 +95,14 @@ export async function GET(request: NextRequest) {
         const newStatus = isOnline ? 'online' : 'offline'
         const notificationResults: Array<{ alertType: string; alertCreated: boolean; notifications: Record<string, boolean | string> | null }> = []
 
+        // Verificar janela de manutenção (suprimir alertas)
+        let inMaintenance = false
+        try {
+          inMaintenance = await isInMaintenanceWindow(store.id)
+        } catch { /* ignore */ }
+
         // Atualizar status se mudou
-        if (store.status !== newStatus) {
+        if (store.status !== newStatus && !inMaintenance) {
           let financialLossMeta: Record<string, unknown> = {}
 
           if (isOnline && store.offline_since) {
