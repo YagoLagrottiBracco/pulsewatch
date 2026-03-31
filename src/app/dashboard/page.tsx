@@ -1,12 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import DashboardLayout from '@/components/dashboard-layout'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Store, Package, AlertTriangle, TrendingUp, TrendingDown, Shield, Clock, PackageX, ArrowUp, ArrowDown, Minus } from 'lucide-react'
+import OnboardingWidget from '@/components/onboarding-widget'
+import NpsModal from '@/components/nps-modal'
 
 interface UptimeStore {
   storeId: string
@@ -28,6 +30,9 @@ interface StockForecastItem {
 
 export default function DashboardPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const [showNps, setShowNps] = useState(false)
+  const [npsInitialScore, setNpsInitialScore] = useState<number | undefined>(undefined)
   const [stats, setStats] = useState({
     stores: 0,
     products: 0,
@@ -58,6 +63,13 @@ export default function DashboardPage() {
 
   useEffect(() => {
     checkAdminAndLoadData()
+
+    // NPS from email link
+    const npsScore = searchParams.get('nps_score')
+    if (npsScore !== null) {
+      setNpsInitialScore(parseInt(npsScore))
+      setShowNps(true)
+    }
   }, [])
 
   useEffect(() => {

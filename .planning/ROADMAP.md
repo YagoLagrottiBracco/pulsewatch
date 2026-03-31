@@ -13,7 +13,7 @@ PulseWatch é um SaaS de monitoramento de e-commerce para lojistas brasileiros. 
 - [x] **Phase 5: Multi-usuário e Times** - Equipes, convites, papéis e roteamento de alertas
 - [x] **Phase 6: Plano Agência e White-label** - Dashboard multi-cliente, workspace por cliente e white-label
 - [x] **Phase 7: Automações e API** - Webhooks, status page pública, janelas de manutenção e API pública
-- [ ] **Phase 8: Crescimento e Retenção** - Onboarding, programa de indicação, upsell e NPS
+- [x] **Phase 8: Crescimento e Retenção** - Onboarding, programa de indicação, upsell e NPS
 
 ## Phase Details
 
