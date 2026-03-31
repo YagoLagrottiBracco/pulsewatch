@@ -20,6 +20,7 @@ import {
   Activity,
   Sparkles,
   Users,
+  Building2,
 } from 'lucide-react'
 import { RealtimeProvider } from '@/contexts/realtime-context'
 import { NotificationPanel } from '@/components/notification-panel'
@@ -45,6 +46,9 @@ function SidebarNav({
       : []),
     ...(['business', 'agency'].includes(profile?.subscription_tier || '')
       ? [{ name: 'Time', href: '/team', icon: Users }]
+      : []),
+    ...(profile?.subscription_tier === 'agency'
+      ? [{ name: 'Agência', href: '/agency', icon: Building2 }]
       : []),
     { name: 'Lojas', href: '/stores', icon: Store },
     { name: 'Produtos', href: '/products', icon: Package },
