@@ -4,7 +4,10 @@ import { sendNotifications } from '@/services/notification'
 import { NuvemshopClient } from '@/integrations/nuvemshop'
 import { TrayClient } from '@/integrations/tray'
 import { VtexClient } from '@/integrations/vtex'
+import { MercadoLivreClient } from '@/integrations/mercadolivre'
+import { ShopeeClient } from '@/integrations/shopee'
 import { calculateFinancialLoss, resolveRevenuePerHour } from '@/services/financial-loss'
+import { monitorGatewaysAndAlert } from '@/services/gateway-monitor'
 
 const ADVANCED_MONITORING_TIERS = ['pro', 'business', 'agency']
 
@@ -206,6 +209,10 @@ export async function GET(request: NextRequest) {
               productsSynced = await syncTrayProducts(supabase, store, stockAlertConfig)
             } else if (store.platform === 'vtex') {
               productsSynced = await syncVtexProducts(supabase, store, stockAlertConfig)
+            } else if (store.platform === 'mercadolivre') {
+              productsSynced = await syncMercadoLivreProducts(supabase, store, stockAlertConfig)
+            } else if (store.platform === 'shopee') {
+              productsSynced = await syncShopeeProducts(supabase, store, stockAlertConfig)
             }
           } catch (error) {
             syncError = String(error)
@@ -246,10 +253,20 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Gateway monitoring (runs once per cron, not per store)
+    let gatewayResult = { checked: 0, alerts: 0 }
+    try {
+      gatewayResult = await monitorGatewaysAndAlert(supabaseUrl, supabaseServiceKey)
+    } catch (gwError) {
+      console.error('Erro no monitoramento de gateways:', gwError)
+    }
+
     return NextResponse.json({
       success: true,
       timestamp: new Date().toISOString(),
       storesChecked: stores?.length || 0,
+      gatewaysChecked: gatewayResult.checked,
+      gatewayAlerts: gatewayResult.alerts,
       results,
     })
   } catch (error: any) {
@@ -1353,4 +1370,226 @@ async function checkAdvancedMonitors(
   }
 
   return alerts
+}
+
+// ============================================================
+// Sync: Mercado Livre (Phase 3)
+// ============================================================
+
+async function syncMercadoLivreProducts(
+  supabase: any,
+  store: any,
+  stockConfig?: StockAlertConfig
+): Promise<number> {
+  const config = store.platform_config
+  if (!config || !config.accessToken) {
+    console.log(`Loja ${store.name} sem credenciais ML configuradas`)
+    return 0
+  }
+
+  try {
+    const client = new MercadoLivreClient({
+      accessToken: config.accessToken,
+      userId: config.userId,
+    })
+
+    const products = await client.fetchProducts(50)
+    let synced = 0
+    const lowStockThreshold = stockConfig?.lowStockThreshold ?? 5
+    const enableOutOfStock = stockConfig?.enableOutOfStock ?? true
+    const enableLowStock = stockConfig?.enableLowStock ?? true
+    const enableBackInStock = stockConfig?.enableBackInStock ?? true
+
+    for (const product of products) {
+      const stockQuantity = product.available_quantity || 0
+
+      const productData = {
+        store_id: store.id,
+        external_id: String(product.id),
+        name: product.title,
+        sku: null,
+        price: product.price || 0,
+        stock_quantity: stockQuantity,
+        stock_status: stockQuantity > 0 ? 'in_stock' : 'out_of_stock',
+        product_url: product.permalink,
+        category: product.category_id || 'Sem categoria',
+        last_synced: new Date().toISOString(),
+      }
+
+      const { data: existingProduct } = await supabase
+        .from('products')
+        .select('stock_quantity, stock_status')
+        .eq('store_id', store.id)
+        .eq('external_id', String(product.id))
+        .single()
+
+      await supabase.from('products').upsert(productData, { onConflict: 'store_id,external_id' })
+
+      // Stock alerts
+      if (existingProduct) {
+        const prevQty = existingProduct.stock_quantity || 0
+        if (prevQty > 0 && stockQuantity === 0 && enableOutOfStock) {
+          await createAlertWithNotification(supabase, store, {
+            type: 'ESTOQUE_ZERADO',
+            severity: 'high',
+            title: 'Estoque Zerado',
+            message: `O produto "${product.title}" da loja ${store.name} ficou sem estoque no Mercado Livre.`,
+            metadata: { productId: product.id, productName: product.title },
+          })
+        } else if (prevQty === 0 && stockQuantity > 0 && enableBackInStock) {
+          await createAlertWithNotification(supabase, store, {
+            type: 'ESTOQUE_DISPONIVEL',
+            severity: 'low',
+            title: 'Produto Disponível',
+            message: `O produto "${product.title}" da loja ${store.name} voltou ao estoque no Mercado Livre.`,
+            metadata: { productId: product.id, productName: product.title },
+          })
+        } else if (stockQuantity > 0 && stockQuantity <= lowStockThreshold && prevQty > lowStockThreshold && enableLowStock) {
+          await createAlertWithNotification(supabase, store, {
+            type: 'ESTOQUE_BAIXO',
+            severity: 'medium',
+            title: 'Estoque Baixo',
+            message: `O produto "${product.title}" da loja ${store.name} está com estoque baixo (${stockQuantity}) no Mercado Livre.`,
+            metadata: { productId: product.id, productName: product.title, stockQuantity },
+          })
+        }
+      }
+
+      synced++
+    }
+
+    // Check paused listings
+    try {
+      const pausedListings = await client.checkPausedListings()
+      if (pausedListings.length > 0) {
+        const canCreate = await shouldCreateAlert(supabase, store.id, 'ML_LISTAGEM_PAUSADA', 60 * 24) // 1x/dia
+        if (canCreate) {
+          await createAlertWithNotification(supabase, store, {
+            type: 'ML_LISTAGEM_PAUSADA',
+            severity: 'medium',
+            title: 'Listagens Pausadas no Mercado Livre',
+            message: `A loja ${store.name} tem ${pausedListings.length} listagem(ns) pausada(s) no Mercado Livre.`,
+            metadata: { count: pausedListings.length, items: pausedListings.slice(0, 5).map(p => p.title) },
+          })
+        }
+      }
+    } catch (err) {
+      console.error(`Erro ao verificar listagens pausadas ML da loja ${store.name}:`, err)
+    }
+
+    return synced
+  } catch (error) {
+    console.error(`Erro ao sincronizar produtos ML da loja ${store.name}:`, error)
+    return 0
+  }
+}
+
+// ============================================================
+// Sync: Shopee (Phase 3)
+// ============================================================
+
+async function syncShopeeProducts(
+  supabase: any,
+  store: any,
+  stockConfig?: StockAlertConfig
+): Promise<number> {
+  const config = store.platform_config
+  if (!config || !config.accessToken || !config.partnerId || !config.partnerKey) {
+    console.log(`Loja ${store.name} sem credenciais Shopee configuradas`)
+    return 0
+  }
+
+  try {
+    const client = new ShopeeClient({
+      shopId: config.shopId,
+      accessToken: config.accessToken,
+      partnerId: config.partnerId,
+      partnerKey: config.partnerKey,
+    })
+
+    const products = await client.fetchProducts(50)
+    let synced = 0
+    const lowStockThreshold = stockConfig?.lowStockThreshold ?? 5
+    const enableOutOfStock = stockConfig?.enableOutOfStock ?? true
+    const enableLowStock = stockConfig?.enableLowStock ?? true
+    const enableBackInStock = stockConfig?.enableBackInStock ?? true
+
+    for (const product of products) {
+      const stockQuantity = product.stock_info_v2?.summary_info?.total_available_stock || 0
+      const price = product.price_info?.[0]?.current_price || 0
+
+      const productData = {
+        store_id: store.id,
+        external_id: String(product.item_id),
+        name: product.item_name,
+        sku: product.item_sku || null,
+        price,
+        stock_quantity: stockQuantity,
+        stock_status: stockQuantity > 0 ? 'in_stock' : 'out_of_stock',
+        product_url: null,
+        category: String(product.category_id || 'Sem categoria'),
+        last_synced: new Date().toISOString(),
+      }
+
+      const { data: existingProduct } = await supabase
+        .from('products')
+        .select('stock_quantity, stock_status')
+        .eq('store_id', store.id)
+        .eq('external_id', String(product.item_id))
+        .single()
+
+      await supabase.from('products').upsert(productData, { onConflict: 'store_id,external_id' })
+
+      // Stock alerts
+      if (existingProduct) {
+        const prevQty = existingProduct.stock_quantity || 0
+        if (prevQty > 0 && stockQuantity === 0 && enableOutOfStock) {
+          await createAlertWithNotification(supabase, store, {
+            type: 'ESTOQUE_ZERADO',
+            severity: 'high',
+            title: 'Estoque Zerado',
+            message: `O produto "${product.item_name}" da loja ${store.name} ficou sem estoque na Shopee.`,
+            metadata: { productId: product.item_id, productName: product.item_name },
+          })
+        } else if (prevQty === 0 && stockQuantity > 0 && enableBackInStock) {
+          await createAlertWithNotification(supabase, store, {
+            type: 'ESTOQUE_DISPONIVEL',
+            severity: 'low',
+            title: 'Produto Disponível',
+            message: `O produto "${product.item_name}" da loja ${store.name} voltou ao estoque na Shopee.`,
+            metadata: { productId: product.item_id, productName: product.item_name },
+          })
+        } else if (stockQuantity > 0 && stockQuantity <= lowStockThreshold && prevQty > lowStockThreshold && enableLowStock) {
+          await createAlertWithNotification(supabase, store, {
+            type: 'ESTOQUE_BAIXO',
+            severity: 'medium',
+            title: 'Estoque Baixo',
+            message: `O produto "${product.item_name}" da loja ${store.name} está com estoque baixo (${stockQuantity}) na Shopee.`,
+            metadata: { productId: product.item_id, productName: product.item_name, stockQuantity },
+          })
+        }
+      }
+
+      // Check banned/unlist status
+      if (product.item_status === 'BANNED' || product.item_status === 'UNLIST') {
+        const canCreate = await shouldCreateAlert(supabase, store.id, 'SHOPEE_PRODUTO_BLOQUEADO', 60 * 24)
+        if (canCreate) {
+          await createAlertWithNotification(supabase, store, {
+            type: 'SHOPEE_PRODUTO_BLOQUEADO',
+            severity: 'high',
+            title: 'Produto Bloqueado na Shopee',
+            message: `O produto "${product.item_name}" da loja ${store.name} foi ${product.item_status === 'BANNED' ? 'banido' : 'removido'} na Shopee.`,
+            metadata: { productId: product.item_id, productName: product.item_name, status: product.item_status },
+          })
+        }
+      }
+
+      synced++
+    }
+
+    return synced
+  } catch (error) {
+    console.error(`Erro ao sincronizar produtos Shopee da loja ${store.name}:`, error)
+    return 0
+  }
 }

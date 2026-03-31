@@ -200,6 +200,57 @@ export class NuvemshopClient {
   }
 
   /**
+   * Buscar pedidos recentes (últimas 24h) para métricas em tempo real
+   */
+  async fetchRecentOrders(hoursBack = 24): Promise<NuvemshopOrder[]> {
+    if (!this.accessToken) return []
+
+    try {
+      const since = new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString()
+      const url = `${this.apiBase}/${this.storeId}/orders?created_at_min=${since}&per_page=200`
+
+      const response = await fetch(url, {
+        headers: this.getHeaders(),
+      })
+
+      if (!response.ok) return []
+
+      return await response.json()
+    } catch (error) {
+      console.error('Erro ao buscar pedidos recentes Nuvemshop:', error)
+      return []
+    }
+  }
+
+  /**
+   * Obter métricas de vendas (total vendido hoje, ticket médio, pedidos do dia)
+   */
+  async getStoreSalesMetrics(): Promise<{
+    totalSalesToday: number
+    ordersToday: number
+    averageTicket: number
+  } | null> {
+    try {
+      const orders = await this.fetchRecentOrders(24)
+      if (!orders || orders.length === 0) {
+        return { totalSalesToday: 0, ordersToday: 0, averageTicket: 0 }
+      }
+
+      const totalSales = orders.reduce((sum, order) => sum + parseFloat(order.price || '0'), 0)
+      const averageTicket = totalSales / orders.length
+
+      return {
+        totalSalesToday: totalSales,
+        ordersToday: orders.length,
+        averageTicket: Math.round(averageTicket * 100) / 100,
+      }
+    } catch (error) {
+      console.error('Erro ao calcular métricas Nuvemshop:', error)
+      return null
+    }
+  }
+
+  /**
    * Obter informações da loja
    */
   async getStoreInfo(): Promise<any | null> {

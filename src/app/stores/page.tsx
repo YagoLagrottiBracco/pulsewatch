@@ -68,6 +68,12 @@ export default function StoresPage() {
     vtexAccountName: '',
     vtexAppKey: '',
     vtexAppToken: '',
+    mlAccessToken: '',
+    mlUserId: '',
+    shopeeShopId: '',
+    shopeeAccessToken: '',
+    shopeePartnerId: '',
+    shopeePartnerKey: '',
     speedThresholdSeconds: '3',
     checkoutMonitorEnabled: true,
   })
@@ -402,6 +408,22 @@ export default function StoresPage() {
         appToken: formData.vtexAppToken,
         environment: 'vtexcommercestable',
       }
+    } else if (platformKey === 'mercadolivre' && formData.mlAccessToken) {
+      platformConfig = {
+        accessToken: formData.mlAccessToken,
+        userId: formData.mlUserId || undefined,
+      }
+    } else if (
+      platformKey === 'shopee' &&
+      formData.shopeeShopId &&
+      formData.shopeeAccessToken
+    ) {
+      platformConfig = {
+        shopId: formData.shopeeShopId,
+        accessToken: formData.shopeeAccessToken,
+        partnerId: formData.shopeePartnerId || undefined,
+        partnerKey: formData.shopeePartnerKey || undefined,
+      }
     }
 
     // Normalizar domain (remover https:// ou http://)
@@ -453,6 +475,12 @@ export default function StoresPage() {
         vtexAccountName: '',
         vtexAppKey: '',
         vtexAppToken: '',
+        mlAccessToken: '',
+        mlUserId: '',
+        shopeeShopId: '',
+        shopeeAccessToken: '',
+        shopeePartnerId: '',
+        shopeePartnerKey: '',
         speedThresholdSeconds: '3',
         checkoutMonitorEnabled: true,
       })
@@ -574,6 +602,12 @@ export default function StoresPage() {
         vtexAccountName: '',
         vtexAppKey: '',
         vtexAppToken: '',
+        mlAccessToken: '',
+        mlUserId: '',
+        shopeeShopId: '',
+        shopeeAccessToken: '',
+        shopeePartnerId: '',
+        shopeePartnerKey: '',
         speedThresholdSeconds: '3',
         checkoutMonitorEnabled: true,
       })
@@ -601,6 +635,12 @@ export default function StoresPage() {
       vtexAccountName: '',
       vtexAppKey: '',
       vtexAppToken: '',
+      mlAccessToken: '',
+      mlUserId: '',
+      shopeeShopId: '',
+      shopeeAccessToken: '',
+      shopeePartnerId: '',
+      shopeePartnerKey: '',
       speedThresholdSeconds: String((store.speed_threshold_ms || 3000) / 1000),
       checkoutMonitorEnabled: store.checkout_monitor_enabled !== false,
     })
@@ -645,6 +685,12 @@ export default function StoresPage() {
       vtexAccountName: '',
       vtexAppKey: '',
       vtexAppToken: '',
+      mlAccessToken: '',
+      mlUserId: '',
+      shopeeShopId: '',
+      shopeeAccessToken: '',
+      shopeePartnerId: '',
+      shopeePartnerKey: '',
       speedThresholdSeconds: '3',
       checkoutMonitorEnabled: true,
     })
