@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Sparkles, TrendingUp, Package, AlertTriangle, DollarSign, BarChart3, ShoppingCart, Clock, Trash2, RefreshCw, Crown, Lock } from 'lucide-react';
-import { CheckCircle2, Circle, Clock3, MinusCircle } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import Link from 'next/link';
