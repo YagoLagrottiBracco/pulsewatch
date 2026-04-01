@@ -66,24 +66,22 @@
 
 ## Traceability
 
-_Preenchido pelo roadmapper após criação do roadmap._
-
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
-| ACT-01 | — | pending |
-| ACT-02 | — | pending |
-| ACT-03 | — | pending |
-| AUTO-01 | — | pending |
-| AUTO-02 | — | pending |
-| HIST-01 | — | pending |
-| HIST-02 | — | pending |
-| ALERT-01 | — | pending |
-| ALERT-02 | — | pending |
-| EXPORT-01 | — | pending |
-| SHARE-01 | — | pending |
-| SHARE-02 | — | pending |
-| SHARE-03 | — | pending |
-| CHAT-01 | — | pending |
-| CHAT-02 | — | pending |
-| CHAT-03 | — | pending |
-| CHAT-04 | — | pending |
+| ACT-01 | Phase 9 | pending |
+| ACT-02 | Phase 9 | pending |
+| ACT-03 | Phase 9 | pending |
+| AUTO-01 | Phase 11 | pending |
+| AUTO-02 | Phase 11 | pending |
+| HIST-01 | Phase 10 | pending |
+| HIST-02 | Phase 10 | pending |
+| ALERT-01 | Phase 12 | pending |
+| ALERT-02 | Phase 12 | pending |
+| EXPORT-01 | Phase 13 | pending |
+| SHARE-01 | Phase 13 | pending |
+| SHARE-02 | Phase 13 | pending |
+| SHARE-03 | Phase 13 | pending |
+| CHAT-01 | Phase 14 | pending |
+| CHAT-02 | Phase 14 | pending |
+| CHAT-03 | Phase 14 | pending |
+| CHAT-04 | Phase 14 | pending |

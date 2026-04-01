@@ -6,10 +6,18 @@
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 9 — Rastreamento de Ações (next to start)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-04-01 — Milestone v1.1 started
+Status: Roadmap defined, ready to plan Phase 9
+Last activity: 2026-04-01 — v1.1 roadmap created (Phases 9-14)
+
+## Progress Bar
+
+```
+v1.1: [ 9 ][ 10 ][ 11 ][ 12 ][ 13 ][ 14 ]
+       ---   ---   ---   ---   ---   ---
+       0/6 phases complete
+```
 
 ## Project Reference
 
@@ -18,7 +26,20 @@ See: .planning/PROJECT.md (updated 2026-04-01)
 **Core value:** Detectar lojas "online mas quebradas" antes que o lojista perca vendas
 **Current focus:** v1.1 — Insights IA Avançado (rastreamento de ações, cron, histórico, chat)
 
+## v1.1 Phases
+
+| Phase | Goal | Status |
+|-------|------|--------|
+| 9. Rastreamento de Ações | Usuário acompanha progresso nas recomendações e vê o que fazer hoje | Not started |
+| 10. Histórico de Insights | Usuário navega e compara gerações passadas de insights | Not started |
+| 11. Geração Automática Semanal | Insights gerados automaticamente toda semana sem ação manual | Not started |
+| 12. Insight por Alerta Crítico | Diagnóstico de IA disparado automaticamente por alertas críticos | Not started |
+| 13. Export e Compartilhamento | Exportar PDF e gerar links públicos para clientes | Not started |
+| 14. Chat com Dados | Perguntas em linguagem natural sobre dados da loja via IA | Not started |
+
 ## Completed Phases
+
+### v1.0 MVP (all shipped 2026-03-31)
 
 - Phase 1: Reestruturação dos Planos (free/pro/business/agency) — DONE
 - Phase 2: Monitor de Checkout e Velocidade — DONE (2026-03-30)
@@ -29,7 +50,32 @@ See: .planning/PROJECT.md (updated 2026-04-01)
 - Phase 7: Automações e API — DONE
 - Phase 8: Crescimento e Retenção — DONE (2026-03-31)
 
+## Accumulated Context
+
+### Key Decisions (v1.1)
+
+- Build order follows research recommendation: action tracking → history → cron → alert → export/share → chat
+- Chat route must use Edge Runtime to avoid 60s serverless timeout on streaming
+- Alert-triggered insights hard-throttled at 1 per store per 4 hours (storm prevention)
+- PDF uses @react-pdf/renderer (not Puppeteer) — Vercel serverless safe
+- Share tokens generated with crypto.randomBytes(32) — not enumerable
+- Chat capped at 10 turns per session, daily limit by tier (business: 10/day, agency: 30/day)
+
+### New Packages Required
+
+- `ai@4.3.19` — Vercel AI SDK for chat streaming
+- `@ai-sdk/google@3.0.55` — Gemini provider for AI SDK
+- `@react-pdf/renderer@4.3.2` — Server-side PDF generation
+- `zod@^3.23.8` — Bump (peer requirement of ai@4.3.19)
+
+### Schema Changes Required
+
+- `recommendation_actions` table — new (Phase 9)
+- `ai_insights.triggered_by_alert_id` column — new nullable (Phase 12)
+- `insight_share_tokens` table — new (Phase 13)
+- `chat_messages` table — new (Phase 14)
+
 ## Known Issues / Tech Debt
 
-- Campo legado `plan` coexiste com `subscription_tier` — unificação pendente
-- Telegram Bot usa polling ao invés de webhook — migrar para produção
+- Campo legado `plan` coexiste com `subscription_tier` — unificação pendente (deferred post-v1.1)
+- Telegram Bot usa polling ao invés de webhook — migrar para produção (deferred post-v1.1)
