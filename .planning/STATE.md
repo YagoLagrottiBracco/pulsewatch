@@ -2,16 +2,21 @@
 
 ## Current Status
 
-**v1.0 MVP — SHIPPED 2026-03-31**
+**v1.1 Insights IA Avançado — IN PROGRESS**
 
-All 8 phases complete. Ready to plan v1.1.
+## Current Position
+
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-04-01 — Milestone v1.1 started
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-31)
+See: .planning/PROJECT.md (updated 2026-04-01)
 
 **Core value:** Detectar lojas "online mas quebradas" antes que o lojista perca vendas
-**Current focus:** Planning v1.1 — run `/gsd:new-milestone`
+**Current focus:** v1.1 — Insights IA Avançado (rastreamento de ações, cron, histórico, chat)
 
 ## Completed Phases
 

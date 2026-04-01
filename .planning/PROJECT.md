@@ -1,5 +1,18 @@
 # PulseWatch — Project
 
+## Current Milestone: v1.1 Insights IA Avançado
+
+**Goal:** Transformar a área de Insights IA de uma geração passiva em um sistema ativo de ações rastreáveis, análise histórica e chat com dados.
+
+**Target features:**
+- Rastreamento de ações (marcar recomendações como feito/em progresso/ignorado)
+- Geração automática agendada (cron semanal)
+- Card "O que fazer hoje" (resumo das 3 top ações prioritárias)
+- Histórico de insights (timeline comparativa entre gerações)
+- Insight disparado por alerta crítico
+- Exportar/compartilhar insights (PDF + link)
+- Chat com seus dados (perguntas em linguagem natural via Gemini)
+
 ## What This Is
 
 SaaS de monitoramento de e-commerce para lojistas brasileiros. Detecta problemas antes do lojista perder vendas — de lojas offline a checkouts quebrados, integrações com as principais plataformas brasileiras, e agora com sistema completo de growth e retenção.
@@ -45,7 +58,17 @@ Detectar lojas "online mas quebradas" antes que o lojista perca vendas.
 - ✓ Automações (webhooks, status page, API pública) — v1.0
 - ✓ Growth: onboarding, referral, reengajamento, upsell, NPS — v1.0
 
-### Active (v1.1 candidates)
+### Active (v1.1)
+
+- [ ] Rastreamento de ações em recomendações IA
+- [ ] Geração automática agendada (cron semanal)
+- [ ] Card "O que fazer hoje" com top 3 ações
+- [ ] Histórico e timeline de insights
+- [ ] Insight disparado por alerta crítico
+- [ ] Exportar/compartilhar insights (PDF + link)
+- [ ] Chat com dados via linguagem natural
+
+### Deferred (post-v1.1)
 
 - [ ] Unificar campo legado `plan` com `subscription_tier`
 - [ ] Migrar Telegram de polling para webhook
@@ -83,4 +106,23 @@ Detectar lojas "online mas quebradas" antes que o lojista perca vendas.
 
 ---
 
-*Last updated: 2026-03-31 after v1.0 milestone*
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd:transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd:complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
+
+---
+
+*Last updated: 2026-04-01 after v1.1 milestone started*
