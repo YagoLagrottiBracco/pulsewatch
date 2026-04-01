@@ -1,13 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Sparkles, TrendingUp, Package, AlertTriangle, DollarSign, BarChart3, ShoppingCart, Clock, Trash2, RefreshCw, Crown, Lock } from 'lucide-react';
+import { CheckCircle2, Circle, Clock3, MinusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import Link from 'next/link';
+import type { ActionStatus, TodayAction, InsightsWithActionsResponse } from '@/types/recommendation-actions';
 
 interface Insight {
   id: string;
@@ -29,15 +32,6 @@ interface Insight {
   confidence_score: number;
   created_at: string;
   expires_at: string;
-}
-
-interface InsightsResponse {
-  insights: Insight[];
-  nextAvailableAt: string;
-  canGenerate: boolean;
-  upgradeRequired?: boolean;
-  message?: string;
-  error?: string;
 }
 
 const insightTypeConfig = {
@@ -93,6 +87,8 @@ export default function InsightsPage() {
   const [nextAvailable, setNextAvailable] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string>('all');
   const [upgradeRequired, setUpgradeRequired] = useState(false);
+  const [actionsMap, setActionsMap] = useState<Record<string, ActionStatus>>({});
+  const debounceRefs = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const { toast } = useToast();
 
   useEffect(() => {
@@ -103,13 +99,22 @@ export default function InsightsPage() {
     try {
       setLoading(true);
       const response = await fetch('/api/insights');
-      const data: InsightsResponse = await response.json();
+      const data: InsightsWithActionsResponse = await response.json();
 
       if (response.ok) {
         setInsights(data.insights || []);
         setCanGenerate(data.canGenerate);
         setNextAvailable(data.nextAvailableAt);
         setUpgradeRequired(false);
+
+        // Populate actionsMap from API (only rows that exist; absent = implicit 'pending')
+        if (data.actions && data.actions.length > 0) {
+          const map: Record<string, ActionStatus> = {};
+          for (const action of data.actions) {
+            map[`${action.insight_id}:${action.rec_index}`] = action.status as ActionStatus;
+          }
+          setActionsMap(map);
+        }
       } else if (response.status === 403 && data.upgradeRequired) {
         setUpgradeRequired(true);
         setInsights([]);
@@ -130,6 +135,81 @@ export default function InsightsPage() {
       setLoading(false);
     }
   };
+
+  /** Retorna o status de uma recomendação, com fallback para 'pending' se não existe row. */
+  const getStatus = (insightId: string, recIndex: number): ActionStatus =>
+    actionsMap[`${insightId}:${recIndex}`] ?? 'pending';
+
+  /** Conta apenas recomendações com status 'done' (D-07: ignoradas não entram na contagem). */
+  const getDoneCount = (insightId: string, totalRecs: number): number => {
+    let count = 0;
+    for (let i = 0; i < totalRecs; i++) {
+      if (getStatus(insightId, i) === 'done') count++;
+    }
+    return count;
+  };
+
+  /**
+   * Atualiza o status de uma recomendação com optimistic update + per-key debounce 300ms (D-08).
+   * UI atualiza imediatamente; API é chamada após 300ms de inatividade na mesma chave.
+   * Em caso de falha da API, reverte o estado e exibe toast de erro.
+   */
+  const updateStatus = (insightId: string, recIndex: number, newStatus: ActionStatus) => {
+    const key = `${insightId}:${recIndex}`;
+    const previousStatus = actionsMap[key] ?? 'pending';
+
+    // Optimistic update: fires immediately for instant UI feedback
+    setActionsMap(prev => ({ ...prev, [key]: newStatus }));
+
+    // Per-key debounce: cancels previous timeout for this key only (Pitfall 2)
+    if (debounceRefs.current[key]) clearTimeout(debounceRefs.current[key]);
+    debounceRefs.current[key] = setTimeout(async () => {
+      try {
+        const response = await fetch('/api/insights/actions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ insight_id: insightId, rec_index: recIndex, status: newStatus }),
+        });
+        if (!response.ok) throw new Error('Update failed');
+      } catch {
+        // Rollback to previous status on failure
+        setActionsMap(prev => ({ ...prev, [key]: previousStatus }));
+        toast({
+          title: 'Erro ao salvar',
+          description: 'Não foi possível salvar o status da recomendação',
+          variant: 'destructive',
+        });
+      }
+    }, 300);
+  };
+
+  /**
+   * Top 3 recomendações pendentes ou em progresso, ordenadas por prioridade (D-03, D-04, D-05).
+   * Cross-store: itera todos os insights do usuário independente da store.
+   * Derivado do estado React — atualiza automaticamente sem refetch (D-09).
+   */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const todayActions = useMemo((): TodayAction[] => {
+    const pending: TodayAction[] = [];
+    for (const insight of insights) {
+      for (let i = 0; i < (insight.recommendations?.length ?? 0); i++) {
+        const rec = insight.recommendations[i];
+        const status = getStatus(insight.id, i);
+        if (status === 'pending' || status === 'in_progress') {
+          pending.push({
+            insightId: insight.id,
+            insightTitle: insight.title,
+            rec,
+            recIndex: i,
+          });
+        }
+      }
+    }
+    // Sort: high → medium → low (D-05: alta prioridade primeiro)
+    const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+    pending.sort((a, b) => (priorityOrder[a.rec.priority] ?? 2) - (priorityOrder[b.rec.priority] ?? 2));
+    return pending.slice(0, 3);
+  }, [insights, actionsMap]); // actionsMap covers getStatus closure
 
   const generateInsights = async () => {
     try {
@@ -369,6 +449,67 @@ export default function InsightsPage() {
           </div>
         </div>
 
+        {/* Card "O que fazer hoje" — sempre visível, topo da página (D-03) */}
+        {insights.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
+                O que fazer hoje
+              </CardTitle>
+              <CardDescription>
+                {todayActions.length > 0
+                  ? 'Top 3 recomendações de alta prioridade pendentes'
+                  : 'Tudo em dia! Nenhuma recomendação pendente no momento.'}
+              </CardDescription>
+            </CardHeader>
+            {todayActions.length > 0 && (
+              <CardContent>
+                <div className="space-y-3">
+                  {todayActions.map((item) => (
+                    <div
+                      key={`${item.insightId}:${item.recIndex}`}
+                      className="flex items-start justify-between gap-3 border rounded-lg p-3"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{item.rec.title}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                          {item.rec.description}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1 italic">
+                          De: {item.insightTitle}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Badge
+                          variant="outline"
+                          className={getPriorityColor(item.rec.priority)}
+                        >
+                          {item.rec.priority === 'high' ? 'Alta' : item.rec.priority === 'medium' ? 'Média' : 'Baixa'}
+                        </Badge>
+                        <Select
+                          value={getStatus(item.insightId, item.recIndex)}
+                          onValueChange={(val) => updateStatus(item.insightId, item.recIndex, val as ActionStatus)}
+                        >
+                          <SelectTrigger className="w-[140px] h-7 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pendente</SelectItem>
+                            <SelectItem value="in_progress">Em Progresso</SelectItem>
+                            <SelectItem value="done">Concluída</SelectItem>
+                            <SelectItem value="ignored">Ignorada</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            )}
+          </Card>
+        )}
+
         {/* Stats Cards */}
         {insights.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -476,11 +617,17 @@ export default function InsightsPage() {
                           <CardDescription className="mt-1">
                             {insight.summary}
                           </CardDescription>
-                          <div className="flex items-center gap-2 mt-2">
+                          <div className="flex items-center gap-2 mt-2 flex-wrap">
                             <Badge variant="outline">{config?.label}</Badge>
                             <Badge variant="outline">
                               Confiança: {(insight.confidence_score * 100).toFixed(0)}%
                             </Badge>
+                            {insight.recommendations?.length > 0 && (
+                              <Badge variant="outline" className="gap-1">
+                                <CheckCircle2 className="h-3 w-3 text-green-500" />
+                                {getDoneCount(insight.id, insight.recommendations.length)}/{insight.recommendations.length} concluídas
+                              </Badge>
+                            )}
                             <span className="text-xs text-muted-foreground">
                               {new Date(insight.created_at).toLocaleDateString('pt-BR')}
                             </span>
@@ -575,18 +722,34 @@ export default function InsightsPage() {
                               key={idx}
                               className="border rounded-lg p-4 space-y-2"
                             >
-                              <div className="flex items-start justify-between">
-                                <h5 className="font-medium">{rec.title}</h5>
-                                <Badge
-                                  variant="outline"
-                                  className={getPriorityColor(rec.priority)}
-                                >
-                                  {rec.priority === 'high'
-                                    ? 'Alta'
-                                    : rec.priority === 'medium'
-                                    ? 'Média'
-                                    : 'Baixa'}
-                                </Badge>
+                              <div className="flex items-start justify-between gap-2">
+                                <h5 className="font-medium flex-1">{rec.title}</h5>
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <Badge
+                                    variant="outline"
+                                    className={getPriorityColor(rec.priority)}
+                                  >
+                                    {rec.priority === 'high'
+                                      ? 'Alta'
+                                      : rec.priority === 'medium'
+                                      ? 'Média'
+                                      : 'Baixa'}
+                                  </Badge>
+                                  <Select
+                                    value={getStatus(insight.id, idx)}
+                                    onValueChange={(val) => updateStatus(insight.id, idx, val as ActionStatus)}
+                                  >
+                                    <SelectTrigger className="w-[140px] h-7 text-xs">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="pending">Pendente</SelectItem>
+                                      <SelectItem value="in_progress">Em Progresso</SelectItem>
+                                      <SelectItem value="done">Concluída</SelectItem>
+                                      <SelectItem value="ignored">Ignorada</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
                               </div>
                               <p className="text-sm text-muted-foreground">
                                 {rec.description}
