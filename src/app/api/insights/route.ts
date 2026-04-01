@@ -70,8 +70,20 @@ export async function GET(request: NextRequest) {
       { p_user_id: user.id }
     );
 
+    // Fetch existing action statuses for all loaded insights (single extra round-trip)
+    const insightIds = (insights ?? []).map((i: { id: string }) => i.id);
+    let actions: Array<{ insight_id: string; rec_index: number; status: string }> = [];
+    if (insightIds.length > 0) {
+      const { data: actionsData } = await supabase
+        .from('recommendation_actions')
+        .select('insight_id, rec_index, status')
+        .in('insight_id', insightIds);
+      actions = actionsData ?? [];
+    }
+
     return NextResponse.json({
       insights,
+      actions,
       nextAvailableAt: nextAvailable,
       canGenerate: canGenerate || false,
     });
