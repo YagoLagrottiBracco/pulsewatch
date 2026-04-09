@@ -34,6 +34,12 @@ interface Insight {
   expires_at: string;
 }
 
+interface Generation {
+  id: string;
+  generated_at: string;
+  insight_count: number;
+}
+
 const insightTypeConfig = {
   sales_patterns: {
     icon: TrendingUp,
@@ -88,17 +94,35 @@ export default function InsightsPage() {
   const [selectedType, setSelectedType] = useState<string>('all');
   const [upgradeRequired, setUpgradeRequired] = useState(false);
   const [actionsMap, setActionsMap] = useState<Record<string, ActionStatus>>({});
+  const [generations, setGenerations] = useState<Generation[]>([]);
+  const [selectedGenerationId, setSelectedGenerationId] = useState<string | null>(null);
+  const [generationsLoading, setGenerationsLoading] = useState(false);
   const debounceRefs = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchInsights();
+    fetchGenerations();
+    fetchInsights(null);
   }, []);
 
-  const fetchInsights = async () => {
+  const fetchGenerations = async () => {
+    try {
+      const response = await fetch('/api/insights/generations');
+      if (!response.ok) return; // silent fail — selector simply won't show (Pitfall 3)
+      const data = await response.json();
+      setGenerations(data.generations ?? []);
+    } catch (error) {
+      console.error('Error fetching generations:', error);
+    }
+  };
+
+  const fetchInsights = async (generationId: string | null = selectedGenerationId) => {
     try {
       setLoading(true);
-      const response = await fetch('/api/insights');
+      const url = generationId
+        ? `/api/insights?generation_id=${encodeURIComponent(generationId)}`
+        : '/api/insights';
+      const response = await fetch(url);
       const data: InsightsWithActionsResponse = await response.json();
 
       if (response.ok) {
@@ -225,7 +249,9 @@ export default function InsightsPage() {
           title: 'Sucesso! 🎉',
           description: data.message,
         });
-        await fetchInsights();
+        await fetchInsights(null);
+        await fetchGenerations();
+        setSelectedGenerationId(null); // snap back to latest after new generation (D-05)
       } else {
         if (response.status === 429) {
           const timeUntil = new Date(data.nextAvailableAt).toLocaleString('pt-BR');
@@ -271,6 +297,14 @@ export default function InsightsPage() {
     }
   };
 
+  const handleGenerationChange = async (value: string) => {
+    const newId = value === 'latest' ? null : value;
+    setSelectedGenerationId(newId);
+    setGenerationsLoading(true);
+    await fetchInsights(newId);
+    setGenerationsLoading(false);
+  };
+
   const filteredInsights =
     selectedType === 'all'
       ? insights
@@ -302,6 +336,15 @@ export default function InsightsPage() {
         return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
     }
   };
+
+  const formatGenerationDate = (iso: string): string =>
+    new Date(iso).toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
 
   if (loading) {
     return (
@@ -418,24 +461,52 @@ export default function InsightsPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
+            <h1 className="text-3xl font-bold flex items-center gap-2 flex-wrap">
               <Sparkles className="h-8 w-8 text-primary" />
               Insights com IA
               <Badge variant="outline" className="gap-1">
                 <Crown className="h-3 w-3 text-yellow-500" />
                 Ultimate
               </Badge>
+              {generations.length > 0 && (
+                <Badge variant={selectedGenerationId === null ? 'default' : 'secondary'}>
+                  {selectedGenerationId === null
+                    ? 'Atual'
+                    : `Histórico - ${formatGenerationDate(
+                        generations.find((g) => g.id === selectedGenerationId)?.generated_at ?? ''
+                      )}`}
+                </Badge>
+              )}
             </h1>
             <p className="text-muted-foreground mt-1">
               Análises inteligentes baseadas nos seus dados de e-commerce
             </p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
             {!canGenerate && nextAvailable && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Clock className="h-4 w-4" />
                 <span>Próxima geração: {getTimeUntilNext()}</span>
               </div>
+            )}
+            {generations.length > 0 && (
+              <Select
+                value={selectedGenerationId ?? 'latest'}
+                onValueChange={handleGenerationChange}
+                disabled={generationsLoading}
+              >
+                <SelectTrigger className="w-[240px]">
+                  <SelectValue placeholder="Mais recente (atual)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="latest">Mais recente (atual)</SelectItem>
+                  {generations.map((g) => (
+                    <SelectItem key={g.id} value={g.id}>
+                      {formatGenerationDate(g.generated_at)} ({g.insight_count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
             <Button
               onClick={generateInsights}
@@ -599,7 +670,7 @@ export default function InsightsPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-6">
+          <div className={`space-y-6 ${generationsLoading ? 'opacity-50 pointer-events-none' : ''}`}>
             {filteredInsights.map((insight) => {
               const config = insightTypeConfig[insight.insight_type as keyof typeof insightTypeConfig];
               const Icon = config?.icon || Sparkles;
