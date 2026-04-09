@@ -18,7 +18,7 @@
 
 - [ ] **AUTO-01**: Sistema gera insights automaticamente toda semana (segunda-feira) para usuários business+ sem intervenção manual
 - [ ] **AUTO-02**: Cron de geração semanal verifica se usuário já gerou insights nos últimos 6 dias antes de chamar a IA (deduplicação)
-- [ ] **HIST-01**: Usuário pode navegar por gerações passadas de insights via seletor de datas na página de insights
+- [x] **HIST-01**: Usuário pode navegar por gerações passadas de insights via seletor de datas na página de insights
 - [ ] **HIST-02**: Usuário pode comparar insights de duas gerações diferentes lado a lado
 
 ### Integrações de Monitoramento
@@ -73,7 +73,7 @@
 | ACT-03 | Phase 9 | pending |
 | AUTO-01 | Phase 11 | pending |
 | AUTO-02 | Phase 11 | pending |
-| HIST-01 | Phase 10 | pending |
+| HIST-01 | Phase 10 | Complete |
 | HIST-02 | Phase 10 | pending |
 | ALERT-01 | Phase 12 | pending |
 | ALERT-02 | Phase 12 | pending |

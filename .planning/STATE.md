@@ -1,3 +1,17 @@
+---
+gsd_state_version: 1.0
+milestone: v1.1
+milestone_name: Insights IA Avançado
+status: executing
+last_updated: "2026-04-09T22:25:46.875Z"
+last_activity: 2026-04-09
+progress:
+  total_phases: 6
+  completed_phases: 0
+  total_plans: 3
+  completed_plans: 1
+---
+
 # PulseWatch — State
 
 ## Current Status
@@ -6,10 +20,10 @@
 
 ## Current Position
 
-Phase: 9 — Rastreamento de Ações (COMPLETE)
-Plan: 01/01 — complete
-Status: Phase 9 done; next is Phase 10 — Histórico de Insights
-Last activity: 2026-04-01 — Phase 9 plan 01 executed (recommendation action tracking)
+Phase: 10 (Histórico de Insights) — EXECUTING
+Plan: 2 of 3
+Status: Executing Phase 10 (10-01 complete, starting 10-02)
+Last activity: 2026-04-09 -- 10-01-PLAN.md complete (backend foundation for insight history)
 
 ## Progress Bar
 
@@ -24,7 +38,7 @@ v1.1: [ 9 ][ 10 ][ 11 ][ 12 ][ 13 ][ 14 ]
 See: .planning/PROJECT.md (updated 2026-04-01)
 
 **Core value:** Detectar lojas "online mas quebradas" antes que o lojista perca vendas
-**Current focus:** v1.1 — Insights IA Avançado (rastreamento de ações, cron, histórico, chat)
+**Current focus:** Phase 10 — Histórico de Insights
 
 ## v1.1 Phases
 
@@ -55,6 +69,9 @@ See: .planning/PROJECT.md (updated 2026-04-01)
 ### Key Decisions (v1.1)
 
 - Build order follows research recommendation: action tracking → history → cron → alert → export/share → chat
+- Phase 10-01: Log-first insert pattern — insert insight_generation_log before ai_insights batch to capture UUID for FK propagation (D-02)
+- Phase 10-01: Nullable generation_id with no backfill — pre-Phase-10 insights remain valid without FK (D-01)
+- Phase 10-01: Two-query approach for generation counts — fetch logs then counts separately for reliability (Pitfall 6)
 - Chat route must use Edge Runtime to avoid 60s serverless timeout on streaming
 - Alert-triggered insights hard-throttled at 1 per store per 4 hours (storm prevention)
 - PDF uses @react-pdf/renderer (not Puppeteer) — Vercel serverless safe
@@ -70,7 +87,8 @@ See: .planning/PROJECT.md (updated 2026-04-01)
 
 ### Schema Changes Required
 
-- `recommendation_actions` table — new (Phase 9)
+- `recommendation_actions` table — new (Phase 9) — DONE
+- `ai_insights.generation_id` column — new nullable FK (Phase 10) — DONE
 - `ai_insights.triggered_by_alert_id` column — new nullable (Phase 12)
 - `insight_share_tokens` table — new (Phase 13)
 - `chat_messages` table — new (Phase 14)

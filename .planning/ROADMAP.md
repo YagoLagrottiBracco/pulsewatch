@@ -123,7 +123,7 @@ Full archive: `.planning/milestones/v1.0-ROADMAP.md`
 | 7. Automações e API | v1.0 | — | ✅ Complete | 2026-03 |
 | 8. Crescimento e Retenção | v1.0 | — | ✅ Complete | 2026-03-31 |
 | 9. Rastreamento de Ações | v1.1 | 0/? | Not started | - |
-| 10. Histórico de Insights | v1.1 | 0/? | Not started | - |
+| 10. Histórico de Insights | v1.1 | 1/3 | In Progress|  |
 | 11. Geração Automática Semanal | v1.1 | 0/? | Not started | - |
 | 12. Insight por Alerta Crítico | v1.1 | 0/? | Not started | - |
 | 13. Export e Compartilhamento | v1.1 | 0/? | Not started | - |
