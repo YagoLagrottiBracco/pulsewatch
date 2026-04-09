@@ -130,7 +130,19 @@ export async function POST(request: NextRequest) {
       throw new Error('Falha ao gerar insights');
     }
 
-    // Save insights to database
+    // Log generation FIRST to capture the generation_id (D-02)
+    const { data: logEntry, error: logError } = await supabase
+      .from('insight_generation_log')
+      .insert({ user_id: user.id, success: true })
+      .select('id')
+      .single();
+
+    if (logError || !logEntry) {
+      console.error('Log insert error:', logError);
+      throw new Error('Falha ao registrar geração');
+    }
+
+    // Save insights to database with generation_id propagated to all rows
     const insightsToInsert = insights.map((insight) => ({
       user_id: user.id,
       store_id: stores[0]?.id || null,
@@ -141,6 +153,7 @@ export async function POST(request: NextRequest) {
       recommendations: insight.recommendations,
       confidence_score: insight.confidenceScore,
       data_analyzed: insight.dataAnalyzed,
+      generation_id: logEntry.id,
     }));
 
     const { data: savedInsights, error: insertError } = await supabase
@@ -152,12 +165,6 @@ export async function POST(request: NextRequest) {
       console.error('Insert insights error:', insertError);
       throw new Error('Falha ao salvar insights');
     }
-
-    // Log successful generation
-    await supabase.from('insight_generation_log').insert({
-      user_id: user.id,
-      success: true,
-    });
 
     return NextResponse.json({
       success: true,
