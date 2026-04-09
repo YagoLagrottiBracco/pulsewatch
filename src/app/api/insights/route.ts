@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
+    const generationId = searchParams.get('generation_id');
     const limit = parseInt(searchParams.get('limit') || '10');
 
     let query = supabase
@@ -47,6 +48,10 @@ export async function GET(request: NextRequest) {
 
     if (type) {
       query = query.eq('insight_type', type);
+    }
+
+    if (generationId) {
+      query = query.eq('generation_id', generationId);
     }
 
     const { data: insights, error } = await query;
