@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Insights IA Avançado
 status: executing
-last_updated: "2026-04-09T22:25:46.875Z"
+last_updated: "2026-04-09T22:30:54.995Z"
 last_activity: 2026-04-09
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # PulseWatch — State
@@ -21,9 +21,9 @@ progress:
 ## Current Position
 
 Phase: 10 (Histórico de Insights) — EXECUTING
-Plan: 2 of 3
-Status: Executing Phase 10 (10-01 complete, starting 10-02)
-Last activity: 2026-04-09 -- 10-01-PLAN.md complete (backend foundation for insight history)
+Plan: 3 of 3
+Status: Executing Phase 10 (10-01, 10-02 complete, starting 10-03)
+Last activity: 2026-04-09 -- 10-02-PLAN.md complete (generation selector UI for insight history)
 
 ## Progress Bar
 
@@ -72,6 +72,9 @@ See: .planning/PROJECT.md (updated 2026-04-01)
 - Phase 10-01: Log-first insert pattern — insert insight_generation_log before ai_insights batch to capture UUID for FK propagation (D-02)
 - Phase 10-01: Nullable generation_id with no backfill — pre-Phase-10 insights remain valid without FK (D-01)
 - Phase 10-01: Two-query approach for generation counts — fetch logs then counts separately for reliability (Pitfall 6)
+- Phase 10-02: Generation interface inline in page.tsx — local scope sufficient, no need to add to shared types file
+- Phase 10-02: fetchGenerations silent fail — selector hidden when endpoint unavailable, no error toast (Pitfall 3 pattern)
+- Phase 10-02: generationId default param pattern — fetchInsights(generationId = selectedGenerationId) avoids state race on explicit calls
 - Chat route must use Edge Runtime to avoid 60s serverless timeout on streaming
 - Alert-triggered insights hard-throttled at 1 per store per 4 hours (storm prevention)
 - PDF uses @react-pdf/renderer (not Puppeteer) — Vercel serverless safe
