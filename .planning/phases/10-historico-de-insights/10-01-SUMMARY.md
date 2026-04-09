@@ -118,6 +118,17 @@ None - this plan is backend-only. No UI rendering or data display implemented he
 - generation_id filter ready to reload insights when user selects a past generation
 - Failure-path logging in generate route unchanged — catch block still records success=false rows
 
+## Self-Check: PASSED
+
+- migration file: FOUND
+- generate/route.ts: FOUND
+- insights/route.ts: FOUND
+- generations/route.ts: FOUND
+- SUMMARY.md: FOUND
+- commit 064ab68 (Task 1): FOUND
+- commit a391d3f (Task 2): FOUND
+- commit cbf14b1 (Task 3): FOUND
+
 ---
 *Phase: 10-historico-de-insights*
 *Completed: 2026-04-09*
