@@ -106,6 +106,12 @@ export default function InsightsPage() {
   const debounceRefs = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const { toast } = useToast();
 
+  // Share link state (Phase 13)
+  const [shareLink, setShareLink] = useState<{ token: string; expiresAt: string; shareId: string } | null>(null);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [showSharePanel, setShowSharePanel] = useState(false);
+
   useEffect(() => {
     fetchGenerations();
     fetchInsights(null);
@@ -355,6 +361,49 @@ export default function InsightsPage() {
     setGenerationsLoading(true);
     await fetchInsights(newId);
     setGenerationsLoading(false);
+  };
+
+  // Export PDF via browser print dialog (Phase 13 — EXPORT-01)
+  const handleExportPDF = () => {
+    window.print();
+  };
+
+  // Generate shareable link (Phase 13 — SHARE-01)
+  const handleShare = async () => {
+    if (!selectedGenerationId) return;
+    setShareLoading(true);
+    setShareError(null);
+    try {
+      const res = await fetch('/api/insights/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ generationId: selectedGenerationId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setShareError(data.error || 'Erro ao gerar link');
+        return;
+      }
+      setShareLink({ token: data.token, expiresAt: data.expiresAt, shareId: data.shareId });
+      setShowSharePanel(true);
+    } catch {
+      setShareError('Erro ao gerar link');
+    } finally {
+      setShareLoading(false);
+    }
+  };
+
+  // Revoke shareable link (Phase 13 — SHARE-03)
+  const handleRevoke = async () => {
+    if (!shareLink?.shareId) return;
+    try {
+      await fetch(`/api/insights/share/${shareLink.shareId}`, { method: 'DELETE' });
+      setShareLink(null);
+      setShowSharePanel(false);
+      toast({ title: 'Link revogado', description: 'O link foi desativado imediatamente.' });
+    } catch {
+      toast({ title: 'Erro', description: 'Não foi possível revogar o link.', variant: 'destructive' });
+    }
   };
 
   const filteredInsights =
@@ -760,6 +809,13 @@ export default function InsightsPage() {
 
   return (
     <div className="container mx-auto py-8 px-4">
+      {/* Estilos de impressão para export PDF (Phase 13 — EXPORT-01) */}
+      <style>{`
+        @media print {
+          nav, header, aside, [data-no-print] { display: none !important; }
+          body { background: white; }
+        }
+      `}</style>
       <div className="flex flex-col gap-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -821,6 +877,60 @@ export default function InsightsPage() {
               <Button variant="ghost" onClick={exitCompareMode}>
                 Sair da comparação
               </Button>
+            )}
+            {/* Export PDF — business+ com geração selecionada (Phase 13 — EXPORT-01) */}
+            {!upgradeRequired && selectedGenerationId && (
+              <Button variant="outline" size="sm" onClick={handleExportPDF} data-no-print>
+                Exportar PDF
+              </Button>
+            )}
+            {/* Compartilhar — agency (server valida), com geração selecionada (Phase 13 — SHARE-01) */}
+            {!upgradeRequired && selectedGenerationId && (
+              <div className="relative" data-no-print>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => shareLink ? setShowSharePanel((v) => !v) : handleShare()}
+                  disabled={shareLoading}
+                >
+                  {shareLoading ? 'Gerando...' : shareLink ? 'Ver link' : 'Compartilhar'}
+                </Button>
+                {/* Painel do link gerado */}
+                {showSharePanel && shareLink && (
+                  <div className="absolute right-0 top-10 z-20 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 p-4 w-80">
+                    <p className="text-xs font-medium text-gray-500 mb-2">
+                      Link público · válido até {new Date(shareLink.expiresAt).toLocaleDateString('pt-BR')}
+                    </p>
+                    <div className="flex items-center gap-2 mb-3">
+                      <input
+                        readOnly
+                        value={`${window.location.origin}/share/${shareLink.token}`}
+                        className="text-xs text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 flex-1 min-w-0"
+                      />
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(`${window.location.origin}/share/${shareLink.token}`);
+                          toast({ title: 'Copiado!', description: 'Link copiado para a área de transferência.' });
+                        }}
+                        className="text-xs px-2 py-1.5 bg-primary text-primary-foreground rounded-lg hover:opacity-90 shrink-0"
+                      >
+                        Copiar
+                      </button>
+                    </div>
+                    <button
+                      onClick={handleRevoke}
+                      className="text-xs text-red-500 hover:text-red-700 transition-colors"
+                    >
+                      Revogar link
+                    </button>
+                  </div>
+                )}
+                {shareError && !showSharePanel && (
+                  <div className="absolute right-0 top-10 z-20 text-xs text-red-500 bg-white dark:bg-gray-900 border border-red-100 rounded-lg p-2 shadow w-56">
+                    {shareError}
+                  </div>
+                )}
+              </div>
             )}
             <Button
               onClick={generateInsights}
