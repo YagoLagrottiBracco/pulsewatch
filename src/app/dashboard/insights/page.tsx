@@ -400,6 +400,9 @@ export default function InsightsPage() {
 
   const formatGenerationLabel = (gen: Generation): string => {
     const date = new Date(gen.generated_at);
+    if (gen.source === 'alert_triggered') {
+      return `Disparado por alerta — ${date.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
+    }
     if (gen.source === 'automatic') {
       return `Automatico — ${date.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })}`;
     }
