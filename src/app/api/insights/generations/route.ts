@@ -36,7 +36,7 @@ export async function GET(_request: NextRequest) {
     // Fetch successful generations for this user (D-12, Open Question 2 — filter success=true)
     const { data: logs, error: logsError } = await supabase
       .from('insight_generation_log')
-      .select('id, generated_at')
+      .select('id, generated_at, source')
       .eq('user_id', user.id)
       .eq('success', true)
       .order('generated_at', { ascending: false });
@@ -69,6 +69,7 @@ export async function GET(_request: NextRequest) {
     const generations = (logs ?? []).map((l) => ({
       id: l.id,
       generated_at: l.generated_at,
+      source: (l as any).source ?? 'manual',
       insight_count: counts[l.id] ?? 0,
     }));
 

@@ -38,6 +38,7 @@ interface Generation {
   id: string;
   generated_at: string;
   insight_count: number;
+  source?: string;
 }
 
 const insightTypeConfig = {
@@ -397,6 +398,14 @@ export default function InsightsPage() {
       minute: '2-digit',
     });
 
+  const formatGenerationLabel = (gen: Generation): string => {
+    const date = new Date(gen.generated_at);
+    if (gen.source === 'automatic') {
+      return `Automatico — ${date.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })}`;
+    }
+    return date.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  };
+
   /**
    * Renders a single column of insight cards.
    * Used for both compare-mode columns and optionally the single-column non-compare view.
@@ -448,7 +457,7 @@ export default function InsightsPage() {
               <SelectItem value="latest">Mais recente (atual)</SelectItem>
               {generations.map((g) => (
                 <SelectItem key={g.id} value={g.id}>
-                  {formatGenerationDate(g.generated_at)} ({g.insight_count})
+                  {formatGenerationLabel(g)} ({g.insight_count})
                 </SelectItem>
               ))}
             </SelectContent>
@@ -793,7 +802,7 @@ export default function InsightsPage() {
                   <SelectItem value="latest">Mais recente (atual)</SelectItem>
                   {generations.map((g) => (
                     <SelectItem key={g.id} value={g.id}>
-                      {formatGenerationDate(g.generated_at)} ({g.insight_count})
+                      {formatGenerationLabel(g)} ({g.insight_count})
                     </SelectItem>
                   ))}
                 </SelectContent>
