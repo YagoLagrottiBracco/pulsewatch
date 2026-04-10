@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { createClient } from '@supabase/supabase-js';
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY || '');
@@ -224,3 +225,89 @@ IMPORTANTE: Responda APENAS com um JSON válido no seguinte formato (sem markdow
 }
 
 export const aiInsightsService = new AIInsightsService();
+
+export type InsightSource = 'manual' | 'automatic' | 'alert_triggered';
+
+export async function generateInsightsForUser(
+  userId: string,
+  source: InsightSource = 'manual'
+): Promise<{ insightCount: number; generationId: string }> {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  // Fetch user profile
+  const { data: userProfile, error: profileError } = await supabase
+    .from('user_profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+
+  if (profileError || !userProfile) {
+    throw new Error(`Profile fetch failed for user ${userId}`);
+  }
+
+  // Fetch user data for analysis
+  const [ordersResult, productsResult, alertsResult, storesResult] = await Promise.all([
+    supabase.from('orders').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(100),
+    supabase.from('products').select('*').eq('user_id', userId).limit(100),
+    supabase.from('alerts').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
+    supabase.from('stores').select('*').eq('user_id', userId),
+  ]);
+
+  const orders = ordersResult.data || [];
+  const products = productsResult.data || [];
+  const alerts = alertsResult.data || [];
+  const stores = storesResult.data || [];
+
+  if (orders.length === 0 && products.length === 0) {
+    throw new Error('Dados insuficientes para gerar insights');
+  }
+
+  // Generate insights using AI
+  const insights = await aiInsightsService.generateInsights({
+    orders, products, alerts, stores, userProfile,
+  });
+
+  if (!insights || insights.length === 0) {
+    throw new Error('Falha ao gerar insights');
+  }
+
+  // Log generation FIRST (log-first pattern from Phase 10)
+  const { data: logEntry, error: logError } = await supabase
+    .from('insight_generation_log')
+    .insert({ user_id: userId, success: true, source })
+    .select('id')
+    .single();
+
+  if (logError || !logEntry) {
+    throw new Error('Falha ao registrar geracao');
+  }
+
+  // Save insights with generation_id and source
+  const insightsToInsert = insights.map((insight) => ({
+    user_id: userId,
+    store_id: stores[0]?.id || null,
+    insight_type: insight.type,
+    title: insight.title,
+    summary: insight.summary,
+    detailed_analysis: insight.detailedAnalysis,
+    recommendations: insight.recommendations,
+    confidence_score: insight.confidenceScore,
+    data_analyzed: insight.dataAnalyzed,
+    generation_id: logEntry.id,
+    source,
+  }));
+
+  const { data: savedInsights, error: insertError } = await supabase
+    .from('ai_insights')
+    .insert(insightsToInsert)
+    .select();
+
+  if (insertError) {
+    throw new Error('Falha ao salvar insights');
+  }
+
+  return { insightCount: savedInsights?.length ?? 0, generationId: logEntry.id };
+}

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { aiInsightsService } from '@/services/ai-insights';
+import { generateInsightsForUser } from '@/services/ai-insights';
 
 export async function POST(request: NextRequest) {
   try {
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     // Get user profile to check subscription tier
     const { data: userProfile, error: profileError } = await supabase
       .from('user_profiles')
-      .select('*')
+      .select('subscription_tier')
       .eq('id', user.id)
       .single();
 
@@ -73,103 +73,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch user's data for analysis
-    const [ordersResult, productsResult, alertsResult, storesResult] = await Promise.all([
-      supabase
-        .from('orders')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(100),
-      
-      supabase
-        .from('products')
-        .select('*')
-        .eq('user_id', user.id)
-        .limit(100),
-      
-      supabase
-        .from('alerts')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50),
-      
-      supabase
-        .from('stores')
-        .select('*')
-        .eq('user_id', user.id),
-    ]);
-
-    const orders = ordersResult.data || [];
-    const products = productsResult.data || [];
-    const alerts = alertsResult.data || [];
-    const stores = storesResult.data || [];
-
-    // Check if user has enough data
-    if (orders.length === 0 && products.length === 0) {
-      return NextResponse.json(
-        {
-          error: 'Dados insuficientes',
-          message: 'Você precisa ter pelo menos alguns pedidos ou produtos cadastrados para gerar insights.',
-        },
-        { status: 400 }
-      );
-    }
-
-    // Generate insights using AI
-    const insights = await aiInsightsService.generateInsights({
-      orders,
-      products,
-      alerts,
-      stores,
-      userProfile,
-    });
-
-    if (!insights || insights.length === 0) {
-      throw new Error('Falha ao gerar insights');
-    }
-
-    // Log generation FIRST to capture the generation_id (D-02)
-    const { data: logEntry, error: logError } = await supabase
-      .from('insight_generation_log')
-      .insert({ user_id: user.id, success: true })
-      .select('id')
-      .single();
-
-    if (logError || !logEntry) {
-      console.error('Log insert error:', logError);
-      throw new Error('Falha ao registrar geração');
-    }
-
-    // Save insights to database with generation_id propagated to all rows
-    const insightsToInsert = insights.map((insight) => ({
-      user_id: user.id,
-      store_id: stores[0]?.id || null,
-      insight_type: insight.type,
-      title: insight.title,
-      summary: insight.summary,
-      detailed_analysis: insight.detailedAnalysis,
-      recommendations: insight.recommendations,
-      confidence_score: insight.confidenceScore,
-      data_analyzed: insight.dataAnalyzed,
-      generation_id: logEntry.id,
-    }));
-
-    const { data: savedInsights, error: insertError } = await supabase
-      .from('ai_insights')
-      .insert(insightsToInsert)
-      .select();
-
-    if (insertError) {
-      console.error('Insert insights error:', insertError);
-      throw new Error('Falha ao salvar insights');
-    }
+    const { insightCount, generationId } = await generateInsightsForUser(user.id, 'manual');
 
     return NextResponse.json({
       success: true,
-      insights: savedInsights,
-      message: `${insights.length} insights gerados com sucesso!`,
+      message: `${insightCount} insights gerados com sucesso!`,
+      generationId,
     });
   } catch (error: any) {
     console.error('Generate insights error:', error);
