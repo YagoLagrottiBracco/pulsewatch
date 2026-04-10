@@ -25,7 +25,7 @@ Detectar lojas "online mas quebradas" antes que o lojista perca vendas.
 
 **Shipped:** v1.0 MVP (2026-03-31)
 **Codebase:** ~25.000 LOC TypeScript (Next.js 14 App Router)
-**Status:** Todas as 8 fases do roadmap inicial entregues
+**Status:** v1.1 em andamento — Phases 9, 10, 11 concluídas (Phase 11 complete — Geração Automática Semanal)
 
 ## Stack
 
