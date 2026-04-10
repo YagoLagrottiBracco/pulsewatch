@@ -230,7 +230,8 @@ export type InsightSource = 'manual' | 'automatic' | 'alert_triggered';
 
 export async function generateInsightsForUser(
   userId: string,
-  source: InsightSource = 'manual'
+  source: InsightSource = 'manual',
+  alertId?: string
 ): Promise<{ insightCount: number; generationId: string }> {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -277,7 +278,7 @@ export async function generateInsightsForUser(
   // Log generation FIRST (log-first pattern from Phase 10)
   const { data: logEntry, error: logError } = await supabase
     .from('insight_generation_log')
-    .insert({ user_id: userId, success: true, source })
+    .insert({ user_id: userId, success: true, source, ...(alertId ? { alert_id: alertId } : {}) })
     .select('id')
     .single();
 
