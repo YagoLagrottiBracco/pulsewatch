@@ -26,7 +26,7 @@ Full archive: `.planning/milestones/v1.0-ROADMAP.md`
 ### v1.1 Insights IA Avançado (Phases 9-14)
 
 - [ ] **Phase 9: Rastreamento de Ações** — Usuário acompanha progresso nas recomendações e vê o que fazer hoje
-- [x] **Phase 10: Histórico de Insights** — Usuário navega e compara gerações passadas de insights (completed 2026-04-10)
+- [x] **Phase 10: Histórico de Insights** — Usuário navega e compara gerações passadas de insights (completed 2026-04-10)
 - [ ] **Phase 11: Geração Automática Semanal** — Sistema gera insights automaticamente toda semana sem intervenção manual
 - [ ] **Phase 12: Insight por Alerta Crítico** — Sistema dispara diagnóstico de IA automaticamente quando um alerta crítico ocorre
 - [ ] **Phase 13: Export e Compartilhamento** — Usuário exporta insights como PDF e compartilha via link público
@@ -69,7 +69,10 @@ Full archive: `.planning/milestones/v1.0-ROADMAP.md`
   2. O cron não dispara uma nova geração se o usuário já gerou insights nos últimos 6 dias (deduplicação visível no histórico)
   3. Gerações automáticas aparecem no histórico de insights identificadas como "geração automática"
   4. Usuários que não são business+ não recebem gerações automáticas
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 11-01-PLAN.md — Schema migration (source column) + extract generateInsightsForUser service
+- [ ] 11-02-PLAN.md — Weekly cron route + UI label "Automatico" in generation selector
 
 ### Phase 12: Insight por Alerta Crítico
 **Goal**: Sistema gera automaticamente um diagnóstico de IA quando um alerta crítico é detectado, fechando o loop entre monitoramento e inteligência
@@ -124,7 +127,7 @@ Full archive: `.planning/milestones/v1.0-ROADMAP.md`
 | 8. Crescimento e Retenção | v1.0 | — | ✅ Complete | 2026-03-31 |
 | 9. Rastreamento de Ações | v1.1 | 0/? | Not started | - |
 | 10. Histórico de Insights | v1.1 | 2/3 | Complete    | 2026-04-10 |
-| 11. Geração Automática Semanal | v1.1 | 0/? | Not started | - |
+| 11. Geração Automática Semanal | v1.1 | 0/2 | Planning complete | - |
 | 12. Insight por Alerta Crítico | v1.1 | 0/? | Not started | - |
 | 13. Export e Compartilhamento | v1.1 | 0/? | Not started | - |
 | 14. Chat com Dados | v1.1 | 0/? | Not started | - |
