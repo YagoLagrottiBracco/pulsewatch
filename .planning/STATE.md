@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Insights IA Avançado
 status: completed
-last_updated: "2026-04-10T17:18:08.046Z"
+last_updated: "2026-04-10T17:23:07.691Z"
 last_activity: 2026-04-10
 progress:
   total_phases: 6
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 5
   completed_plans: 5
 ---
@@ -20,8 +20,8 @@ progress:
 
 ## Current Position
 
-Phase: 11 (gera-o-autom-tica-semanal) — COMPLETE
-Plan: 2 of 2 — DONE
+Phase: 12
+Plan: Not started
 Status: Phase 11 complete — all 2 plans done; next phase is 12 (Insight por Alerta Crítico)
 Last activity: 2026-04-10
 
@@ -38,7 +38,7 @@ v1.1: [ 9 ][ 10 ][ 11 ][ 12 ][ 13 ][ 14 ]
 See: .planning/PROJECT.md (updated 2026-04-01)
 
 **Core value:** Detectar lojas "online mas quebradas" antes que o lojista perca vendas
-**Current focus:** Phase 10 — Histórico de Insights
+**Current focus:** Phase 11 — gera-o-autom-tica-semanal
 
 ## v1.1 Phases
 
@@ -77,8 +77,6 @@ See: .planning/PROJECT.md (updated 2026-04-01)
 - Phase 10-02: generationId default param pattern — fetchInsights(generationId = selectedGenerationId) avoids state race on explicit calls
 - Phase 10-03: Keep single-column inline render for non-compare path; renderInsightColumn helper used only in compare mode to minimize churn
 - Phase 10-03: Main generation selector disabled during compareMode to prevent selectedGenerationId changing while in compare view
-- Phase 11-01: InsightSource type covers Phase 11 (automatic) and Phase 12 (alert_triggered) in one migration
-- Phase 11-01: Service role client in generateInsightsForUser so it works from both auth routes and cron context
 - Phase 11-02: user_profiles id column used in cron dedup query (matches generate/route.ts pattern, not user_id)
 - Phase 11-02: source fallback '?? manual' in generations API for graceful degradation if migration not applied
 - Phase 11-02: formatGenerationLabel helper centralizes source-aware label logic for main and compare selectors
