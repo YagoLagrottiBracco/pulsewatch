@@ -127,7 +127,7 @@ Plans:
 | 8. Crescimento e Retenção | v1.0 | — | ✅ Complete | 2026-03-31 |
 | 9. Rastreamento de Ações | v1.1 | 0/? | Not started | - |
 | 10. Histórico de Insights | v1.1 | 2/3 | Complete    | 2026-04-10 |
-| 11. Geração Automática Semanal | v1.1 | 0/2 | Planning complete | - |
+| 11. Geração Automática Semanal | v1.1 | 0/2 | Planned    |  |
 | 12. Insight por Alerta Crítico | v1.1 | 0/? | Not started | - |
 | 13. Export e Compartilhamento | v1.1 | 0/? | Not started | - |
 | 14. Chat com Dados | v1.1 | 0/? | Not started | - |
