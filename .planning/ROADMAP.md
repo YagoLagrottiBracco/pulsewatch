@@ -28,7 +28,7 @@ Full archive: `.planning/milestones/v1.0-ROADMAP.md`
 - [ ] **Phase 9: Rastreamento de Ações** — Usuário acompanha progresso nas recomendações e vê o que fazer hoje
 - [x] **Phase 10: Histórico de Insights** — Usuário navega e compara gerações passadas de insights (completed 2026-04-10)
 - [x] **Phase 11: Geração Automática Semanal** — Sistema gera insights automaticamente toda semana sem intervenção manual (completed 2026-04-10)
-- [ ] **Phase 12: Insight por Alerta Crítico** — Sistema dispara diagnóstico de IA automaticamente quando um alerta crítico ocorre
+- [x] **Phase 12: Insight por Alerta Crítico** — Sistema dispara diagnóstico de IA automaticamente quando um alerta crítico ocorre (completed 2026-04-10)
 - [ ] **Phase 13: Export e Compartilhamento** — Usuário exporta insights como PDF e compartilha via link público
 - [ ] **Phase 14: Chat com Dados** — Usuário faz perguntas em linguagem natural sobre os dados da sua loja
 
@@ -128,6 +128,6 @@ Plans:
 | 9. Rastreamento de Ações | v1.1 | 0/? | Not started | - |
 | 10. Histórico de Insights | v1.1 | 2/3 | Complete    | 2026-04-10 |
 | 11. Geração Automática Semanal | v1.1 | 0/2 | Complete    | 2026-04-10 |
-| 12. Insight por Alerta Crítico | v1.1 | 0/? | Not started | - |
+| 12. Insight por Alerta Crítico | v1.1 | 0/? | Complete    | 2026-04-10 |
 | 13. Export e Compartilhamento | v1.1 | 0/? | Not started | - |
 | 14. Chat com Dados | v1.1 | 0/? | Not started | - |
