@@ -11,6 +11,7 @@ import { monitorGatewaysAndAlert } from '@/services/gateway-monitor'
 import { recordUptimeSnapshot } from '@/services/uptime-sla'
 import { triggerWebhooks } from '@/services/webhooks'
 import { isInMaintenanceWindow } from '@/services/maintenance'
+import { generateInsightsForUser } from '@/services/ai-insights'
 
 const ADVANCED_MONITORING_TIERS = ['pro', 'business', 'agency']
 
@@ -450,15 +451,26 @@ async function createAlertWithNotification(
   }
 ): Promise<{ alertCreated: boolean; notifications: Record<string, boolean | string> | null }> {
   // Criar alerta
-  const { error } = await supabase.from('alerts').insert({
-    store_id: store.id,
-    ...alertData,
-    is_read: false,
-  })
+  const { data: alertRow, error } = await supabase
+    .from('alerts')
+    .insert({
+      store_id: store.id,
+      ...alertData,
+      is_read: false,
+    })
+    .select('id')
+    .single()
 
   if (error) {
     console.error('Erro ao criar alerta:', error)
     return { alertCreated: false, notifications: null }
+  }
+
+  // Disparar insight por alerta para severidades críticas (fire-and-forget — não bloqueia o cron)
+  if (alertRow?.id && (alertData.severity === 'high' || alertData.severity === 'critical')) {
+    triggerAlertInsight(supabase, store.user_id, alertRow.id).catch((err) =>
+      console.error('Erro ao disparar insight por alerta:', err)
+    )
   }
 
   // Enviar notificações e aguardar resultado para diagnóstico
@@ -476,6 +488,33 @@ async function createAlertWithNotification(
     console.error('Erro ao enviar notificações:', err)
     return { alertCreated: true, notifications: { error: String(err?.message ?? err) } }
   }
+}
+
+async function triggerAlertInsight(
+  supabase: any,
+  userId: string,
+  alertId: string
+): Promise<void> {
+  // Deduplicação: apenas 1 insight por usuário a cada 4 horas com source=alert_triggered
+  const fourHoursAgo = new Date()
+  fourHoursAgo.setHours(fourHoursAgo.getHours() - 4)
+
+  const { data: recentGen } = await supabase
+    .from('insight_generation_log')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('source', 'alert_triggered')
+    .eq('success', true)
+    .gte('generated_at', fourHoursAgo.toISOString())
+    .limit(1)
+
+  if (recentGen && recentGen.length > 0) {
+    console.log(`Insight por alerta ignorado (dedup 4h) para usuário ${userId}`)
+    return
+  }
+
+  await generateInsightsForUser(userId, 'alert_triggered', alertId)
+  console.log(`Insight disparado por alerta ${alertId} para usuário ${userId}`)
 }
 
 async function syncShopifyProducts(
