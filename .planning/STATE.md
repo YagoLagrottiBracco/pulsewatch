@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Insights IA Avançado
-status: verifying
-last_updated: "2026-04-10T03:47:00.000Z"
+status: completed
+last_updated: "2026-04-10T03:51:38.264Z"
 last_activity: 2026-04-10
 progress:
   total_phases: 6
@@ -20,10 +20,10 @@ progress:
 
 ## Current Position
 
-Phase: 10 (Histórico de Insights) — COMPLETE
-Plan: 3 of 3 (all complete)
+Phase: 11
+Plan: Not started
 Status: Phase 10 complete — all 3 plans done; next phase is 11 (Geração Automática Semanal)
-Last activity: 2026-04-10 — 10-03-PLAN.md complete (compare mode side-by-side UI for insight generations)
+Last activity: 2026-04-10
 
 ## Progress Bar
 
