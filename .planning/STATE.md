@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Insights IA Avançado
 status: verifying
-last_updated: "2026-04-10T03:44:54.265Z"
+last_updated: "2026-04-10T03:47:00.000Z"
 last_activity: 2026-04-10
 progress:
   total_phases: 6
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # PulseWatch — State
@@ -20,10 +20,10 @@ progress:
 
 ## Current Position
 
-Phase: 10 (Histórico de Insights) — EXECUTING
-Plan: 3 of 3
-Status: Phase complete — ready for verification
-Last activity: 2026-04-10
+Phase: 10 (Histórico de Insights) — COMPLETE
+Plan: 3 of 3 (all complete)
+Status: Phase 10 complete — all 3 plans done; next phase is 11 (Geração Automática Semanal)
+Last activity: 2026-04-10 — 10-03-PLAN.md complete (compare mode side-by-side UI for insight generations)
 
 ## Progress Bar
 
@@ -45,7 +45,7 @@ See: .planning/PROJECT.md (updated 2026-04-01)
 | Phase | Goal | Status |
 |-------|------|--------|
 | 9. Rastreamento de Ações | Usuário acompanha progresso nas recomendações e vê o que fazer hoje | DONE (2026-04-01) |
-| 10. Histórico de Insights | Usuário navega e compara gerações passadas de insights | Not started |
+| 10. Histórico de Insights | Usuário navega e compara gerações passadas de insights | DONE (2026-04-10) |
 | 11. Geração Automática Semanal | Insights gerados automaticamente toda semana sem ação manual | Not started |
 | 12. Insight por Alerta Crítico | Diagnóstico de IA disparado automaticamente por alertas críticos | Not started |
 | 13. Export e Compartilhamento | Exportar PDF e gerar links públicos para clientes | Not started |
@@ -75,6 +75,8 @@ See: .planning/PROJECT.md (updated 2026-04-01)
 - Phase 10-02: Generation interface inline in page.tsx — local scope sufficient, no need to add to shared types file
 - Phase 10-02: fetchGenerations silent fail — selector hidden when endpoint unavailable, no error toast (Pitfall 3 pattern)
 - Phase 10-02: generationId default param pattern — fetchInsights(generationId = selectedGenerationId) avoids state race on explicit calls
+- Phase 10-03: Keep single-column inline render for non-compare path; renderInsightColumn helper used only in compare mode to minimize churn
+- Phase 10-03: Main generation selector disabled during compareMode to prevent selectedGenerationId changing while in compare view
 - Chat route must use Edge Runtime to avoid 60s serverless timeout on streaming
 - Alert-triggered insights hard-throttled at 1 per store per 4 hours (storm prevention)
 - PDF uses @react-pdf/renderer (not Puppeteer) — Vercel serverless safe

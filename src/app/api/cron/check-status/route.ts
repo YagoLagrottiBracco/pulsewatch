@@ -33,16 +33,19 @@ export async function GET(request: NextRequest) {
     // Criar cliente Supabase com service role
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Buscar todas as lojas ativas
+    // Buscar todas as lojas ativas, ordenadas por created_at para garantir prioridade correta no limite de plano
     const { data: stores, error: storesError } = await supabase
       .from('stores')
       .select('*')
       .eq('is_active', true)
+      .order('created_at', { ascending: true })
 
     if (storesError) throw storesError
 
     const results = []
     const now = new Date()
+    // Conta quantas lojas já foram processadas por usuário neste ciclo (para enforçar limite do plano)
+    const processedStoresPerUser: Record<string, number> = {}
 
     // Verificar cada loja
     for (const store of stores || []) {
@@ -50,12 +53,29 @@ export async function GET(request: NextRequest) {
         // Buscar o tier do usuário
         const { data: userProfile } = await supabase
           .from('user_profiles')
-          .select('subscription_tier')
+          .select('subscription_tier, subscription_status, trial_ends_at')
           .eq('user_id', store.user_id)
           .single()
-        
-        // Verificar intervalo baseado no plano
-        const userTier = userProfile?.subscription_tier || 'free'
+
+        // Calcular tier efetivo: assinatura ativa ou trial ativo → usa o tier real; caso contrário → free
+        const isSubscriptionActive = userProfile?.subscription_status === 'active'
+        const isTrialActive = userProfile?.trial_ends_at && new Date(userProfile.trial_ends_at) > now
+        const userTier = (isSubscriptionActive || isTrialActive)
+          ? (userProfile?.subscription_tier || 'free')
+          : 'free'
+
+        // Enforçar limite de lojas por plano
+        const storeLimit = ['business', 'agency'].includes(userTier) ? Infinity : userTier === 'pro' ? 5 : 1
+        const userProcessedCount = processedStoresPerUser[store.user_id] || 0
+        if (userProcessedCount >= storeLimit) {
+          results.push({
+            store: store.name,
+            status: 'skipped',
+            reason: `Store limit reached for tier: ${userTier} (limit: ${storeLimit})`,
+          })
+          continue
+        }
+        processedStoresPerUser[store.user_id] = userProcessedCount + 1
         const lastCheck = store.last_check ? new Date(store.last_check) : null
         
         // Free: verificação a cada 15 minutos

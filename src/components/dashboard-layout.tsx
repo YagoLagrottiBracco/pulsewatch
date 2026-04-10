@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -21,11 +21,80 @@ import {
   Sparkles,
   Users,
   Building2,
+  Palette,
+  Webhook,
+  ChevronDown,
+  Monitor,
+  Zap,
 } from 'lucide-react'
 import { RealtimeProvider } from '@/contexts/realtime-context'
 import { NotificationPanel } from '@/components/notification-panel'
 
 // ─── Navegação interna ────────────────────────────────────────────────────────
+
+type NavItem = { name: string; href: string; icon: React.ElementType }
+type NavGroup = { group: string; icon: React.ElementType; items: NavItem[] }
+type NavSection = NavItem | NavGroup
+
+function isGroup(s: NavSection): s is NavGroup {
+  return 'group' in s
+}
+
+function NavGroupItem({
+  group,
+  expanded,
+  pathname,
+  onNavigate,
+}: {
+  group: NavGroup
+  expanded: boolean
+  pathname: string
+  onNavigate?: () => void
+}) {
+  const isChildActive = group.items.some(i => pathname === i.href)
+  const [open, setOpen] = useState(isChildActive)
+  const GroupIcon = group.icon
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors hover:bg-muted ${
+          isChildActive ? 'text-primary font-medium' : ''
+        }`}
+      >
+        <GroupIcon className="h-5 w-5 shrink-0" />
+        {expanded && (
+          <>
+            <span className="flex-1 text-left text-sm">{group.group}</span>
+            <ChevronDown className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+          </>
+        )}
+      </button>
+      {(open || !expanded) && (
+        <div className={expanded ? 'ml-4 mt-1 space-y-1 border-l pl-3' : 'mt-1 space-y-1'}>
+          {group.items.map(item => {
+            const Icon = item.icon
+            const isActive = pathname === item.href
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                onClick={onNavigate}
+                className={`flex items-center gap-3 px-3 py-1.5 rounded-md transition-colors text-sm ${
+                  isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                }`}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                {expanded && <span>{item.name}</span>}
+              </Link>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function SidebarNav({
   profile,
@@ -37,43 +106,91 @@ function SidebarNav({
   onNavigate?: () => void
 }) {
   const pathname = usePathname()
+  const tier = profile?.subscription_tier || 'free'
+  const isBusinessPlus = ['business', 'agency'].includes(tier)
+  const isAgency = tier === 'agency'
 
-  const navigation = [
+  const sections: NavSection[] = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-    ...(['business', 'agency'].includes(profile?.subscription_tier || '')
-      ? [{ name: 'Insights IA', href: '/dashboard/insights', icon: Sparkles }]
+    {
+      group: 'Monitoramento',
+      icon: Monitor,
+      items: [
+        { name: 'Lojas', href: '/stores', icon: Store },
+        { name: 'Produtos', href: '/products', icon: Package },
+        { name: 'Alertas', href: '/alerts', icon: AlertTriangle },
+        { name: 'Regras', href: '/alert-rules', icon: Bell },
+        { name: 'Atividades', href: '/activity', icon: Activity },
+      ],
+    },
+    ...(isBusinessPlus
+      ? [{
+          group: 'Inteligência',
+          icon: Sparkles,
+          items: [
+            { name: 'Insights IA', href: '/dashboard/insights', icon: Sparkles },
+          ],
+        } as NavGroup]
       : []),
-    ...(['business', 'agency'].includes(profile?.subscription_tier || '')
-      ? [{ name: 'Time', href: '/team', icon: Users }]
+    ...(isBusinessPlus
+      ? [{
+          group: 'Time',
+          icon: Users,
+          items: [
+            { name: 'Membros', href: '/team', icon: Users },
+          ],
+        } as NavGroup]
       : []),
-    ...(profile?.subscription_tier === 'agency'
-      ? [{ name: 'Agência', href: '/agency', icon: Building2 }]
+    ...(isBusinessPlus
+      ? [{
+          group: 'Automações',
+          icon: Zap,
+          items: [
+            { name: 'Webhooks', href: '/webhooks', icon: Webhook },
+          ],
+        } as NavGroup]
       : []),
-    { name: 'Lojas', href: '/stores', icon: Store },
-    { name: 'Produtos', href: '/products', icon: Package },
-    { name: 'Alertas', href: '/alerts', icon: AlertTriangle },
-    { name: 'Regras', href: '/alert-rules', icon: Bell },
-    { name: 'Atividades', href: '/activity', icon: Activity },
+    ...(isAgency
+      ? [{
+          group: 'Agência',
+          icon: Building2,
+          items: [
+            { name: 'Clientes', href: '/agency', icon: Building2 },
+            { name: 'White-label', href: '/agency/whitelabel', icon: Palette },
+          ],
+        } as NavGroup]
+      : []),
     { name: 'Configurações', href: '/settings', icon: Settings },
   ]
 
   return (
-    <nav className="flex-1 overflow-y-auto min-h-0 p-4 space-y-2">
-      {navigation.map((item) => {
-        const Icon = item.icon
-        const isActive = pathname === item.href
+    <nav className="flex-1 overflow-y-auto min-h-0 p-4 space-y-1">
+      {sections.map((section) => {
+        if (isGroup(section)) {
+          return (
+            <NavGroupItem
+              key={section.group}
+              group={section}
+              expanded={expanded}
+              pathname={pathname}
+              onNavigate={onNavigate}
+            />
+          )
+        }
+        const Icon = section.icon
+        const isActive = pathname === section.href
         return (
           <Link
-            key={item.name}
-            href={item.href}
+            key={section.name}
+            href={section.href}
             onClick={onNavigate}
             className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
               isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
             }`}
           >
             <Icon className="h-5 w-5 shrink-0" />
-            {expanded && <span>{item.name}</span>}
+            {expanded && <span className="text-sm">{section.name}</span>}
           </Link>
         )
       })}

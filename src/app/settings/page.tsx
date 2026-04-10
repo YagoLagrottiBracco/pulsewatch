@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Mail, MessageSquare, User, Save, Phone, MessageCircle } from 'lucide-react'
+import { Mail, MessageSquare, User, Save, Phone, MessageCircle, KeyRound, Plus, Trash2, Eye, EyeOff, Copy, Check } from 'lucide-react'
 import { logAudit, AuditActions, EntityTypes } from '@/lib/audit-logger'
 
 export default function SettingsPage() {
@@ -33,9 +33,23 @@ export default function SettingsPage() {
   const [telegramState, setTelegramState] = useState<'idle' | 'waiting' | 'connected'>('idle')
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
+  // API Keys
+  const [apiKeys, setApiKeys] = useState<any[]>([])
+  const [apiKeyName, setApiKeyName] = useState('')
+  const [newKeyValue, setNewKeyValue] = useState<string | null>(null)
+  const [copiedKey, setCopiedKey] = useState(false)
+  const [loadingKeys, setLoadingKeys] = useState(false)
+  const [creatingKey, setCreatingKey] = useState(false)
+
   useEffect(() => {
     loadProfile()
   }, [])
+
+  useEffect(() => {
+    if (profile?.subscription_tier === 'agency') {
+      loadApiKeys()
+    }
+  }, [profile?.subscription_tier])
 
   // Polling + Realtime para detectar conexão do Telegram
   useEffect(() => {
@@ -257,6 +271,54 @@ export default function SettingsPage() {
     setTelegramState('idle')
     setTelegramInput('')
     setFormData((prev) => ({ ...prev, telegram_chat_id: '', telegram_username: '', telegram_notifications: false }))
+  }
+
+  const loadApiKeys = async () => {
+    setLoadingKeys(true)
+    try {
+      const res = await fetch('/api/keys')
+      if (res.ok) {
+        const json = await res.json()
+        setApiKeys(json.keys)
+      }
+    } finally {
+      setLoadingKeys(false)
+    }
+  }
+
+  const handleCreateKey = async () => {
+    if (!apiKeyName.trim()) return
+    setCreatingKey(true)
+    try {
+      const res = await fetch('/api/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: apiKeyName.trim() }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setNewKeyValue(data.key)
+        setApiKeyName('')
+        await loadApiKeys()
+      } else {
+        setMessage('Erro ao criar key: ' + (data.error || 'tente novamente'))
+      }
+    } finally {
+      setCreatingKey(false)
+    }
+  }
+
+  const handleRevokeKey = async (id: string) => {
+    if (!confirm('Revogar esta API key?')) return
+    await fetch(`/api/keys?id=${id}`, { method: 'DELETE' })
+    await loadApiKeys()
+  }
+
+  const handleCopyKey = () => {
+    if (!newKeyValue) return
+    navigator.clipboard.writeText(newKeyValue)
+    setCopiedKey(true)
+    setTimeout(() => setCopiedKey(false), 2000)
   }
 
   if (loading) {
@@ -721,32 +783,7 @@ export default function SettingsPage() {
               </div>
               
               {profile?.subscription_tier === 'free' && (
-                <Button
-                  onClick={async () => {
-                    setSaving(true)
-                    try {
-                      const supabase = createClient()
-                      const { data: { user } } = await supabase.auth.getUser()
-
-                      const response = await fetch('/api/stripe/create-checkout', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ userId: user?.id, plan: 'pro' }),
-                      })
-                      
-                      const { url } = await response.json()
-                      if (url) window.location.href = url
-                    } catch (error) {
-                      console.error('Checkout error:', error)
-                    } finally {
-                      setSaving(false)
-                    }
-                  }}
-                  disabled={saving}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                >
-                  ⚡ Upgrade para Pro
-                </Button>
+                <span className="text-sm text-muted-foreground">Escolha um plano abaixo para fazer upgrade</span>
               )}
             </div>
 
@@ -765,8 +802,12 @@ export default function SettingsPage() {
                     const response = await fetch('/api/stripe/create-portal', {
                       method: 'POST',
                     })
-                    const { url } = await response.json()
-                    if (url) window.location.href = url
+                    const data = await response.json()
+                    if (!response.ok) {
+                      setMessage('Erro ao abrir portal: ' + (data.error || 'tente novamente'))
+                    } else if (data.url) {
+                      window.location.href = data.url
+                    }
                   } catch (error) {
                     console.error('Portal error:', error)
                     setMessage('Erro ao abrir portal de gerenciamento')
@@ -792,19 +833,189 @@ export default function SettingsPage() {
             </div>
 
             {profile?.subscription_tier === 'free' && (
-              <div className="mt-4 p-4 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg border border-purple-200 dark:border-purple-800">
-                <p className="font-semibold mb-2">💎 Benefícios do Plano Pro (R$ 39,90/mês):</p>
-                <ul className="text-sm space-y-1 text-muted-foreground">
-                  <li>✓ Até 5 lojas monitoradas</li>
-                  <li>✓ Verificação a cada 5 minutos</li>
-                  <li>✓ Alertas por Email, Telegram e WhatsApp</li>
-                  <li>✓ Regras personalizadas por loja</li>
-                  <li>✓ 7 dias grátis para testar</li>
-                </ul>
+              <div className="mt-4 space-y-3">
+                <p className="text-sm font-medium text-muted-foreground">Escolha seu plano:</p>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  {[
+                    {
+                      plan: 'pro',
+                      label: 'Pro',
+                      price: 'R$ 39,90',
+                      trial: '7 dias grátis',
+                      gradient: 'from-purple-600 to-blue-600',
+                      border: 'border-purple-200 dark:border-purple-800',
+                      features: [
+                        'Até 5 lojas',
+                        'Verificação a cada 5 min',
+                        'Email, Telegram e WhatsApp',
+                        'Regras personalizadas',
+                        'Status page pública',
+                      ],
+                    },
+                    {
+                      plan: 'business',
+                      label: 'Business',
+                      price: 'R$ 89,90',
+                      trial: '7 dias grátis',
+                      gradient: 'from-blue-700 to-cyan-600',
+                      border: 'border-blue-200 dark:border-blue-800',
+                      features: [
+                        'Até 20 lojas',
+                        'Verificação a cada 1 min',
+                        'Times com até 3 membros',
+                        'Webhooks (n8n/Zapier)',
+                        'Previsão de estoque',
+                      ],
+                    },
+                    {
+                      plan: 'agency',
+                      label: 'Agency',
+                      price: 'R$ 199,90',
+                      trial: '14 dias grátis',
+                      gradient: 'from-slate-700 to-slate-900',
+                      border: 'border-slate-200 dark:border-slate-700',
+                      features: [
+                        'Lojas ilimitadas',
+                        'Times ilimitados',
+                        'White-label completo',
+                        'Portal do cliente',
+                        'API pública',
+                      ],
+                    },
+                  ].map(({ plan, label, price, trial, gradient, border, features }) => (
+                    <div
+                      key={plan}
+                      className={`rounded-lg border ${border} p-4 flex flex-col gap-3`}
+                    >
+                      <div>
+                        <span className={`inline-block text-xs font-bold px-2 py-0.5 rounded-full text-white bg-gradient-to-r ${gradient}`}>
+                          {label}
+                        </span>
+                        <div className="mt-2 flex items-baseline gap-1">
+                          <span className="text-xl font-black">{price}</span>
+                          <span className="text-xs text-muted-foreground">/mês</span>
+                        </div>
+                        <p className="text-xs text-green-600 font-medium mt-0.5">{trial}</p>
+                      </div>
+                      <ul className="text-xs space-y-1 text-muted-foreground flex-1">
+                        {features.map((f) => (
+                          <li key={f}>✓ {f}</li>
+                        ))}
+                      </ul>
+                      <Button
+                        size="sm"
+                        className={`w-full text-white bg-gradient-to-r ${gradient}`}
+                        disabled={saving}
+                        onClick={async () => {
+                          setSaving(true)
+                          try {
+                            const supabase = createClient()
+                            const { data: { user } } = await supabase.auth.getUser()
+                            const response = await fetch('/api/stripe/create-checkout', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ userId: user?.id, plan }),
+                            })
+                            const data = await response.json()
+                            if (data.url) window.location.href = data.url
+                            else setMessage('Erro ao iniciar checkout: ' + (data.error || 'tente novamente'))
+                          } catch {
+                            setMessage('Erro ao iniciar checkout')
+                          } finally {
+                            setSaving(false)
+                          }
+                        }}
+                      >
+                        Assinar {label}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </CardContent>
         </Card>
+
+        {/* API Keys — agency only */}
+        {profile?.subscription_tier === 'agency' && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <KeyRound className="h-5 w-5" />
+                <CardTitle>API Keys</CardTitle>
+              </div>
+              <CardDescription>
+                Gere chaves para acessar a API pública do PulseWatch
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {newKeyValue && (
+                <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-md space-y-2">
+                  <p className="text-sm font-medium text-green-700 dark:text-green-400">
+                    Chave criada! Copie agora — ela não será exibida novamente.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <code className="text-xs bg-muted px-3 py-2 rounded flex-1 break-all">{newKeyValue}</code>
+                    <Button size="sm" variant="outline" onClick={handleCopyKey}>
+                      {copiedKey ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <Button size="sm" variant="ghost" onClick={() => setNewKeyValue(null)}>Fechar</Button>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Input
+                  value={apiKeyName}
+                  onChange={e => setApiKeyName(e.target.value)}
+                  placeholder="Nome da key (ex: n8n, zapier)"
+                  className="flex-1"
+                />
+                <Button onClick={handleCreateKey} disabled={creatingKey || !apiKeyName.trim()}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  {creatingKey ? 'Criando...' : 'Criar'}
+                </Button>
+              </div>
+
+              {loadingKeys ? (
+                <p className="text-sm text-muted-foreground">Carregando...</p>
+              ) : apiKeys.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma API key criada ainda.</p>
+              ) : (
+                <div className="space-y-2">
+                  {apiKeys.map(k => (
+                    <div key={k.id} className="flex items-center justify-between p-3 rounded-md border">
+                      <div className="space-y-0.5 min-w-0">
+                        <p className="text-sm font-medium">{k.name}</p>
+                        <p className="text-xs text-muted-foreground font-mono">{k.key_prefix}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>{k.is_active ? '✓ Ativa' : '✗ Revogada'}</span>
+                          {k.last_used_at && (
+                            <span>· Último uso: {new Date(k.last_used_at).toLocaleDateString('pt-BR')}</span>
+                          )}
+                        </div>
+                      </div>
+                      {k.is_active && (
+                        <Button size="sm" variant="ghost" onClick={() => handleRevokeKey(k.id)}>
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="pt-2 border-t text-xs text-muted-foreground space-y-1">
+                <p className="font-medium">Como usar:</p>
+                <code className="block bg-muted px-3 py-2 rounded">
+                  GET /api/v1/stores<br />
+                  X-API-Key: pw_live_...
+                </code>
+                <p>Endpoints disponíveis: <span className="font-mono">/api/v1/stores</span> · <span className="font-mono">/api/v1/alerts</span></p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </DashboardLayout>
   )

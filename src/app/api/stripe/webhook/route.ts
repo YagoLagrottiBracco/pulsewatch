@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
             subscription_tier: newTier,
             subscription_status: 'active',
             stripe_subscription_id: session.subscription as string,
+            stripe_customer_id: session.customer as string,
           })
           .eq('user_id', userId)
 
