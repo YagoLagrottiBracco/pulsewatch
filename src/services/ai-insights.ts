@@ -56,8 +56,10 @@ export class AIInsightsService {
         if (insight) {
           insights.push(insight);
         }
-      } catch (error) {
-        console.error(`Error generating insight type ${type}:`, error);
+      } catch (error: any) {
+        const msg = error?.message || String(error);
+        console.error(`Error generating insight type ${type}: ${msg}`);
+        throw error;
       }
     }
 
@@ -217,9 +219,10 @@ IMPORTANTE: Responda APENAS com um JSON válido no seguinte formato (sem markdow
           isBusinessOrAbove,
         },
       };
-    } catch (error) {
-      console.error(`Failed to generate ${type} insight:`, error);
-      return null;
+    } catch (error: any) {
+      const msg = error?.message || String(error);
+      console.error(`Failed to generate ${type} insight: ${msg}`, error);
+      throw new Error(`Gemini error on ${type}: ${msg}`);
     }
   }
 }
