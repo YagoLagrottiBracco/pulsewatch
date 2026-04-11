@@ -250,17 +250,25 @@ export async function generateInsightsForUser(
   }
 
   // Fetch user data for analysis
-  const [ordersResult, productsResult, alertsResult, storesResult] = await Promise.all([
-    supabase.from('orders').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(100),
-    supabase.from('products').select('*').eq('user_id', userId).limit(100),
+  const [alertsResult, storesResult] = await Promise.all([
     supabase.from('alerts').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
     supabase.from('stores').select('*').eq('user_id', userId),
   ]);
 
-  const orders = ordersResult.data || [];
-  const products = productsResult.data || [];
   const alerts = alertsResult.data || [];
   const stores = storesResult.data || [];
+
+  // orders and products are linked via store_id, not user_id
+  const storeIds = stores.map((s: { id: string }) => s.id);
+  const [ordersResult, productsResult] = storeIds.length > 0
+    ? await Promise.all([
+        supabase.from('orders').select('*').in('store_id', storeIds).order('created_at', { ascending: false }).limit(100),
+        supabase.from('products').select('*').in('store_id', storeIds).limit(100),
+      ])
+    : [{ data: [] }, { data: [] }];
+
+  const orders = ordersResult.data || [];
+  const products = productsResult.data || [];
 
   if (orders.length === 0 && products.length === 0) {
     throw new Error('Dados insuficientes para gerar insights');
