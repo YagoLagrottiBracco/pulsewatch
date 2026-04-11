@@ -112,6 +112,14 @@ export default function InsightsPage() {
   const [shareError, setShareError] = useState<string | null>(null);
   const [showSharePanel, setShowSharePanel] = useState(false);
 
+  // Chat state (Phase 14)
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatRemaining, setChatRemaining] = useState<number | null>(null);
+  const [chatLimit, setChatLimit] = useState<number | null>(null);
+
   useEffect(() => {
     fetchGenerations();
     fetchInsights(null);
@@ -403,6 +411,50 @@ export default function InsightsPage() {
       toast({ title: 'Link revogado', description: 'O link foi desativado imediatamente.' });
     } catch {
       toast({ title: 'Erro', description: 'Não foi possível revogar o link.', variant: 'destructive' });
+    }
+  };
+
+  const handleChatSend = async () => {
+    const trimmed = chatInput.trim();
+    if (!trimmed || chatLoading) return;
+    setChatMessages((prev) => [...prev, { role: 'user', content: trimmed }]);
+    setChatInput('');
+    setChatLoading(true);
+    setChatMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
+    try {
+      const res = await fetch('/api/insights/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: trimmed }),
+      });
+      const remaining = res.headers.get('X-Chat-Remaining');
+      const limit = res.headers.get('X-Chat-Limit');
+      if (remaining !== null) setChatRemaining(Number(remaining));
+      if (limit !== null) setChatLimit(Number(limit));
+      if (res.status === 429) {
+        const data = await res.json();
+        setChatMessages((prev) => { const n = [...prev]; n[n.length - 1] = { role: 'assistant', content: data.message || 'Limite diário atingido.' }; return n; });
+        setChatRemaining(0);
+        return;
+      }
+      if (!res.ok || !res.body) {
+        setChatMessages((prev) => { const n = [...prev]; n[n.length - 1] = { role: 'assistant', content: 'Erro ao obter resposta.' }; return n; });
+        return;
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        accumulated += decoder.decode(value, { stream: true });
+        const snapshot = accumulated;
+        setChatMessages((prev) => { const n = [...prev]; n[n.length - 1] = { role: 'assistant', content: snapshot }; return n; });
+      }
+    } catch {
+      setChatMessages((prev) => { const n = [...prev]; n[n.length - 1] = { role: 'assistant', content: 'Erro de conexão. Tente novamente.' }; return n; });
+    } finally {
+      setChatLoading(false);
     }
   };
 
@@ -878,6 +930,12 @@ export default function InsightsPage() {
                 Sair da comparação
               </Button>
             )}
+            {/* Chat com Dados (Phase 14) */}
+            {!upgradeRequired && (
+              <Button variant={chatOpen ? 'default' : 'outline'} size="sm" onClick={() => setChatOpen((v) => !v)} data-no-print>
+                {chatOpen ? 'Fechar chat' : 'Chat com Dados'}
+              </Button>
+            )}
             {/* Export PDF — business+ com geração selecionada (Phase 13 — EXPORT-01) */}
             {!upgradeRequired && selectedGenerationId && (
               <Button variant="outline" size="sm" onClick={handleExportPDF} data-no-print>
@@ -1269,6 +1327,49 @@ export default function InsightsPage() {
               })}
             </div>
           )
+        )}
+        {/* Chat com Dados panel (Phase 14) */}
+        {chatOpen && !upgradeRequired && (
+          <div className="border rounded-xl bg-background shadow-sm flex flex-col" style={{ height: '420px' }} data-no-print>
+            <div className="flex items-center justify-between px-4 py-3 border-b">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="font-medium text-sm">Chat com Dados</span>
+              </div>
+              {chatRemaining !== null && chatLimit !== null && (
+                <span className="text-xs text-muted-foreground">{chatRemaining} de {chatLimit} mensagens hoje</span>
+              )}
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+              {chatMessages.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center mt-8">
+                  Faça uma pergunta sobre os dados da sua loja.<br />
+                  <span className="text-xs">Ex: &quot;Por que meu checkout falhou ontem?&quot;</span>
+                </p>
+              )}
+              {chatMessages.map((msg, idx) => (
+                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[80%] rounded-xl px-3 py-2 text-sm whitespace-pre-wrap ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'}`}>
+                    {msg.content || (chatLoading && idx === chatMessages.length - 1 ? '...' : '')}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="px-4 py-3 border-t flex gap-2">
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleChatSend()}
+                placeholder={chatRemaining === 0 ? 'Limite diário atingido' : 'Faça uma pergunta...'}
+                disabled={chatLoading || chatRemaining === 0}
+                className="flex-1 text-sm bg-muted rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+              />
+              <Button size="sm" onClick={handleChatSend} disabled={chatLoading || !chatInput.trim() || chatRemaining === 0}>
+                {chatLoading ? '...' : 'Enviar'}
+              </Button>
+            </div>
+          </div>
         )}
       </div>
     </div>
