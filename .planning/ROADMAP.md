@@ -30,7 +30,7 @@ Full archive: `.planning/milestones/v1.0-ROADMAP.md`
 - [x] **Phase 11: Geração Automática Semanal** — Sistema gera insights automaticamente toda semana sem intervenção manual (completed 2026-04-10)
 - [x] **Phase 12: Insight por Alerta Crítico** — Sistema dispara diagnóstico de IA automaticamente quando um alerta crítico ocorre (completed 2026-04-10)
 - [x] **Phase 13: Export e Compartilhamento** — Usuário exporta insights como PDF e compartilha via link público (completed 2026-04-10)
-- [ ] **Phase 14: Chat com Dados** — Usuário faz perguntas em linguagem natural sobre os dados da sua loja
+- [x] **Phase 14: Chat com Dados** — Usuário faz perguntas em linguagem natural sobre os dados da sua loja (completed 2026-04-11)
 
 ---
 
@@ -130,4 +130,4 @@ Plans:
 | 11. Geração Automática Semanal | v1.1 | 0/2 | Complete    | 2026-04-10 |
 | 12. Insight por Alerta Crítico | v1.1 | 0/? | Complete    | 2026-04-10 |
 | 13. Export e Compartilhamento | v1.1 | 0/? | Complete    | 2026-04-10 |
-| 14. Chat com Dados | v1.1 | 0/? | Not started | - |
+| 14. Chat com Dados | v1.1 | 0/? | Complete    | 2026-04-11 |

@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Insights IA Avançado
 status: executing
-last_updated: "2026-04-10T18:05:21.439Z"
-last_activity: 2026-04-10
+last_updated: "2026-04-11T04:36:59.906Z"
+last_activity: 2026-04-11
 progress:
   total_phases: 6
-  completed_phases: 4
-  total_plans: 9
-  completed_plans: 9
+  completed_phases: 5
+  total_plans: 11
+  completed_plans: 11
 ---
 
 # PulseWatch — State
@@ -22,8 +22,8 @@ progress:
 
 Phase: 14
 Plan: Not started
-Status: Executing Phase 13
-Last activity: 2026-04-10
+Status: Executing Phase 14
+Last activity: 2026-04-11
 
 ## Progress Bar
 
@@ -38,7 +38,7 @@ v1.1: [ 9 ][ 10 ][ 11 ][ 12 ][ 13 ][ 14 ]
 See: .planning/PROJECT.md (updated 2026-04-01)
 
 **Core value:** Detectar lojas "online mas quebradas" antes que o lojista perca vendas
-**Current focus:** Phase 13 — Export e Compartilhamento
+**Current focus:** Phase 14 — Chat com Dados
 
 ## v1.1 Phases
 
