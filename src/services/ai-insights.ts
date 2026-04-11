@@ -242,7 +242,7 @@ export async function generateInsightsForUser(
   const { data: userProfile, error: profileError } = await supabase
     .from('user_profiles')
     .select('*')
-    .eq('id', userId)
+    .eq('user_id', userId)
     .single();
 
   if (profileError || !userProfile) {
