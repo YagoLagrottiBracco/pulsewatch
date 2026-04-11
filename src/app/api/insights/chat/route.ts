@@ -73,36 +73,41 @@ export async function POST(request: NextRequest) {
   }
 
   // Fetch store context for AI prompt
-  const [alertsResult, ordersResult, productsResult, insightsResult, storesResult] =
-    await Promise.all([
-      serviceClient
-        .from('alerts')
-        .select('type, severity, title, message, created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(20),
-      serviceClient
-        .from('orders')
-        .select('total_price, financial_status, created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50),
-      serviceClient
-        .from('products')
-        .select('title, stock_quantity, price')
-        .eq('user_id', user.id)
-        .limit(30),
-      serviceClient
-        .from('ai_insights')
-        .select('title, summary, insight_type, created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(5),
-      serviceClient
-        .from('stores')
-        .select('name, platform, url')
-        .eq('user_id', user.id),
-    ]);
+  const [alertsResult, insightsResult, storesResult] = await Promise.all([
+    serviceClient
+      .from('alerts')
+      .select('type, severity, title, message, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(20),
+    serviceClient
+      .from('ai_insights')
+      .select('title, summary, insight_type, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(5),
+    serviceClient
+      .from('stores')
+      .select('name, platform, url, id')
+      .eq('user_id', user.id),
+  ]);
+
+  const storeIds = (storesResult.data ?? []).map((s: { id: string }) => s.id);
+  const [ordersResult, productsResult] = storeIds.length > 0
+    ? await Promise.all([
+        serviceClient
+          .from('orders')
+          .select('total, status, created_at')
+          .in('store_id', storeIds)
+          .order('created_at', { ascending: false })
+          .limit(50),
+        serviceClient
+          .from('products')
+          .select('name, stock_quantity, price')
+          .in('store_id', storeIds)
+          .limit(30),
+      ])
+    : [{ data: [] }, { data: [] }];
 
   const contextSummary = buildContextSummary({
     alerts: alertsResult.data ?? [],
@@ -174,7 +179,7 @@ function buildContextSummary(data: {
   }
 
   if (data.orders.length > 0) {
-    const revenue = data.orders.reduce((sum, o) => sum + (parseFloat(o.total_price) || 0), 0);
+    const revenue = data.orders.reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
     lines.push(`Pedidos recentes: ${data.orders.length} pedidos, receita total R$${revenue.toFixed(2)}`);
   }
 
