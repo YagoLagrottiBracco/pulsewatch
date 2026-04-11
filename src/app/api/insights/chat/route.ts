@@ -147,10 +147,13 @@ Responda de forma objetiva, citando dados específicos quando relevante. Não in
         const errorMsg = '\n\n[Erro ao gerar resposta]';
         controller.enqueue(encoder.encode(errorMsg));
         fullAnswer += errorMsg;
-        serviceClient
-          .from('insight_generation_log')
-          .insert({ user_id: user.id, success: false, source: 'chat', error_message: detail })
-          .then(null, (e: any) => console.error('Erro ao salvar log do chat:', e));
+        try {
+          await serviceClient
+            .from('insight_generation_log')
+            .insert({ user_id: user.id, success: false, source: 'chat', error_message: detail });
+        } catch (e: any) {
+          console.error('Erro ao salvar log do chat:', e);
+        }
       } finally {
         controller.close();
         serviceClient
