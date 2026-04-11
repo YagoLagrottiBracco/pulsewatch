@@ -23,7 +23,7 @@ export interface GeneratedInsight {
 }
 
 export class AIInsightsService {
-  private model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  private model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
   async generateInsights(data: InsightData): Promise<GeneratedInsight[]> {
     const insights: GeneratedInsight[] = [];
