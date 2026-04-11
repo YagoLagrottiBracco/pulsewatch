@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const { data: userProfile } = await supabase
       .from('user_profiles')
       .select('subscription_tier')
-      .eq('id', user.id)
+      .eq('user_id', user.id)
       .single();
 
     if (!['business', 'agency'].includes(userProfile?.subscription_tier || '')) {
@@ -118,7 +118,7 @@ export async function DELETE(request: NextRequest) {
     const { data: userProfile } = await supabase
       .from('user_profiles')
       .select('subscription_tier')
-      .eq('id', user.id)
+      .eq('user_id', user.id)
       .single();
 
     if (!['business', 'agency'].includes(userProfile?.subscription_tier || '')) {
