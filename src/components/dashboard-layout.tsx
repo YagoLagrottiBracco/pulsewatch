@@ -397,9 +397,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </main>
         </div>
 
-        {/* Painel de notificações flutuante */}
-        <NotificationPanel />
-        <FeedbackButton />
+        {/* Botões flutuantes: feedback + notificações */}
+        <div className="fixed bottom-6 right-6 z-50 flex items-end gap-3">
+          <FeedbackButton />
+          <NotificationPanel />
+        </div>
       </div>
     </RealtimeProvider>
   )

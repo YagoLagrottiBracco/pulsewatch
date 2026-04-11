@@ -62,7 +62,7 @@ export function NotificationPanel() {
   const bellStyle = getBellStyle(recentAlerts, unreadCount)
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+    <div className="flex flex-col items-end">
       {/* Painel */}
       {open && (
         <div className="mb-3 w-80 md:w-96 rounded-xl border bg-card shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-200">

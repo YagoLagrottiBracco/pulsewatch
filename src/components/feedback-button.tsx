@@ -63,7 +63,7 @@ export default function FeedbackButton() {
       <button
         onClick={handleOpen}
         title="Enviar feedback"
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-full shadow-lg hover:bg-primary/90 transition-all text-sm font-medium"
+        className="flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-2.5 rounded-full shadow-lg hover:bg-secondary/80 transition-all text-sm font-medium"
       >
         <MessageSquarePlus className="h-4 w-4" />
         <span>Feedback</span>
