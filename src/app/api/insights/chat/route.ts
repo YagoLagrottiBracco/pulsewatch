@@ -144,7 +144,7 @@ Responda de forma objetiva, citando dados específicos quando relevante. Não in
       } catch (err: any) {
         const detail = err?.message || String(err);
         console.error('Gemini stream error:', detail, err);
-        const errorMsg = `\n\n[Erro ao gerar resposta: ${detail}]`;
+        const errorMsg = '\n\n[Erro ao gerar resposta]';
         controller.enqueue(encoder.encode(errorMsg));
         fullAnswer += errorMsg;
       } finally {
