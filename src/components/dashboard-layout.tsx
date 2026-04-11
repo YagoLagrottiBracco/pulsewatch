@@ -29,6 +29,7 @@ import {
 } from 'lucide-react'
 import { RealtimeProvider } from '@/contexts/realtime-context'
 import { NotificationPanel } from '@/components/notification-panel'
+import FeedbackButton from '@/components/feedback-button'
 
 // ─── Navegação interna ────────────────────────────────────────────────────────
 
@@ -398,6 +399,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Painel de notificações flutuante */}
         <NotificationPanel />
+        <FeedbackButton />
       </div>
     </RealtimeProvider>
   )

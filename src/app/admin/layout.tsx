@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { Users, Store, FileText, LogOut, LayoutDashboard } from 'lucide-react'
+import { Users, Store, FileText, LogOut, LayoutDashboard, MessageSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export default function AdminLayout({
@@ -67,6 +67,7 @@ export default function AdminLayout({
     { href: '/admin', label: 'Visão Geral', icon: LayoutDashboard },
     { href: '/admin/users', label: 'Usuários', icon: Users },
     { href: '/admin/blog', label: 'Blog', icon: FileText },
+    { href: '/admin/feedback', label: 'Feedbacks', icon: MessageSquare },
   ]
 
   return (
