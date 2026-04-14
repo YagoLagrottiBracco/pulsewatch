@@ -31,8 +31,8 @@ import { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'PulseWatch - Monitoramento Inteligente para E-commerce | Alertas 24/7',
-  description: 'Monitore sua loja Shopify, WooCommerce ou Nuvemshop 24/7. Receba alertas instantâneos de quedas de vendas, estoque baixo e problemas críticos. Teste grátis por 7 dias.',
-  keywords: ['monitoramento e-commerce', 'alertas shopify', 'woocommerce monitor', 'nuvemshop alertas', 'uptime monitor', 'monitoramento loja virtual'],
+  description: 'Monitore sua loja Shopify, WooCommerce, Nuvemshop, VTEX, Magento, Tray, Mercado Livre, Shopee e mais 24/7. Receba alertas instantâneos de quedas de vendas, estoque baixo e problemas críticos. Teste grátis por 7 dias.',
+  keywords: ['monitoramento e-commerce', 'alertas shopify', 'woocommerce monitor', 'nuvemshop alertas', 'vtex monitor', 'tray alertas', 'mercado livre monitor', 'shopee alertas', 'magento monitor', 'uptime monitor', 'monitoramento loja virtual'],
   openGraph: {
     title: 'PulseWatch - Nunca Perca Uma Venda Novamente',
     description: 'Monitoramento inteligente 24/7 para sua loja virtual com alertas em tempo real',
@@ -405,6 +405,41 @@ export default function LandingPage() {
                   </CardContent>
                 </Card>
               </Link>
+            </div>
+
+            {/* Secondary platforms grid */}
+            <div className="mt-16">
+              <p className="text-center text-sm font-medium text-muted-foreground uppercase tracking-widest mb-8">
+                Também suportadas com monitoramento completo
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {[
+                  { name: 'VTEX', color: '#F71963', initial: 'V' },
+                  { name: 'Magento', color: '#EE672F', initial: 'M' },
+                  { name: 'BigCommerce', color: '#34313F', initial: 'B' },
+                  { name: 'PrestaShop', color: '#DF0067', initial: 'P' },
+                  { name: 'Mercado Livre', color: '#FFE600', initial: 'ML', textColor: '#333' },
+                  { name: 'Shopee', color: '#EE4D2D', initial: 'S' },
+                  { name: 'Tray', color: '#00AEEF', initial: 'T' },
+                  { name: 'Spree', color: '#2E8B57', initial: 'Sp' },
+                ].map((p) => (
+                  <div key={p.name} className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm">
+                    <div
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-xs font-bold"
+                      style={{ backgroundColor: p.color, color: p.textColor ?? 'white' }}
+                    >
+                      {p.initial}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">{p.name}</p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <CheckCircle className="h-3 w-3 text-emerald-500 shrink-0" />
+                        <span className="text-xs text-emerald-600 font-medium">Completo</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -1080,6 +1115,11 @@ export default function LandingPage() {
                 <li><Link href="/monitoramento-shopify" className="text-muted-foreground hover:text-primary transition-colors">Shopify</Link></li>
                 <li><Link href="/monitoramento-woocommerce" className="text-muted-foreground hover:text-primary transition-colors">WooCommerce</Link></li>
                 <li><Link href="/monitoramento-nuvemshop" className="text-muted-foreground hover:text-primary transition-colors">Nuvemshop</Link></li>
+                <li><span className="text-muted-foreground">VTEX</span></li>
+                <li><span className="text-muted-foreground">Magento</span></li>
+                <li><span className="text-muted-foreground">Tray</span></li>
+                <li><span className="text-muted-foreground">Mercado Livre</span></li>
+                <li><span className="text-muted-foreground">Shopee</span></li>
               </ul>
             </div>
 
