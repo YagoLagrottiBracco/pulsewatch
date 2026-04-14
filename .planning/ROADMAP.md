@@ -8,7 +8,7 @@
 
 ## Phases
 
-- [ ] **Phase 11: Auto Weekly AI Insights** - Generate AI insights automatically every Monday for business+ users
+- [x] **Phase 11: Auto Weekly AI Insights** - Generate AI insights automatically every Monday for business+ users (completed 2026-04-14)
 - [ ] **Phase 12: Post-Alert Guided Diagnosis** - Show contextual "what to do now" checklists when users view critical alerts
 - [ ] **Phase 13: Loss Calculator on Landing Page** - Add an interactive downtime loss calculator to the landing page
 - [ ] **Phase 14: CSV Export** - Allow users to export alerts and analytics data as CSV files
@@ -77,7 +77,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 11. Auto Weekly AI Insights | 0/? | Not started | - |
+| 11. Auto Weekly AI Insights | 1/1 | Complete   | 2026-04-14 |
 | 12. Post-Alert Guided Diagnosis | 0/? | Not started | - |
 | 13. Loss Calculator on Landing Page | 0/? | Not started | - |
 | 14. CSV Export | 0/? | Not started | - |

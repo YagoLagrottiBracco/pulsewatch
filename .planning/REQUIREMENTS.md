@@ -2,10 +2,10 @@
 
 ## Insights IA (continuação)
 
-- [ ] **INS-01**: Sistema gera insights automaticamente toda segunda-feira para lojas de usuários business+
-- [ ] **INS-02**: Geração automática é deduplicada — não gera se já gerou nos últimos 6 dias
-- [ ] **INS-03**: Gerações automáticas aparecem no histórico com label "geração automática"
-- [ ] **INS-04**: Gate de tier: apenas business+ recebe geração automática
+- [x] **INS-01**: Sistema gera insights automaticamente toda segunda-feira para lojas de usuários business+
+- [x] **INS-02**: Geração automática é deduplicada — não gera se já gerou nos últimos 6 dias
+- [x] **INS-03**: Gerações automáticas aparecem no histórico com label "geração automática"
+- [x] **INS-04**: Gate de tier: apenas business+ recebe geração automática
 
 ## Alertas e UX
 
