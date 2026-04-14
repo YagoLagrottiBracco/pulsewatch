@@ -110,6 +110,13 @@ Phase 11 complete. All four requirements (INS-01 through INS-04) are satisfied:
 - Deduplication: 6-day window enforced
 - Tier gate: only business and agency users processed
 
+## Self-Check: PASSED
+
+- SUMMARY.md: FOUND at .planning/phases/11-auto-weekly-ai-insights/11-11-SUMMARY.md
+- Commit 619f841: FOUND (feat(11-11): replace formatGenerationLabel)
+- Typo "Automatico": ABSENT from insights/page.tsx
+- renderGenerationLabel: 3 occurrences (definition + 2 call sites)
+
 ---
 *Phase: 11-auto-weekly-ai-insights*
 *Completed: 2026-04-14*
