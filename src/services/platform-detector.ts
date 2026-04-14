@@ -206,6 +206,8 @@ export const SUPPORTED_PLATFORMS = [
   { key: 'prestashop', name: 'PrestaShop', icon: '🛒' },
   { key: 'spree', name: 'Spree', icon: '🌲' },
   { key: 'tray', name: 'Tray', icon: '📦' },
+  { key: 'mercadolivre', name: 'Mercado Livre', icon: '🛒' },
+  { key: 'shopee', name: 'Shopee', icon: '🧡' },
 ] as const
 
 export type PlatformKey = typeof SUPPORTED_PLATFORMS[number]['key']

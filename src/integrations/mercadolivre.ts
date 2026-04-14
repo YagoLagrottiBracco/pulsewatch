@@ -239,6 +239,26 @@ export class MercadoLivreClient {
   }
 
   /**
+   * Obter estoque disponível de um item
+   */
+  async fetchInventory(itemId: string): Promise<number> {
+    try {
+      const response = await fetch(`${this.apiBase}/items/${itemId}`, {
+        headers: this.getHeaders(),
+        signal: AbortSignal.timeout(10000),
+      })
+
+      if (!response.ok) return 0
+
+      const data = await response.json()
+      return data.available_quantity ?? 0
+    } catch (error) {
+      console.error('Erro ao buscar estoque ML:', error)
+      return 0
+    }
+  }
+
+  /**
    * Verificar status da API
    */
   async checkStatus(): Promise<boolean> {
