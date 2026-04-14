@@ -197,6 +197,30 @@ export class ShopeeClient {
   }
 
   /**
+   * Obter estoque disponível de um item
+   */
+  async fetchInventory(itemId: number): Promise<number> {
+    try {
+      const url = this.buildUrl('/api/v2/product/get_item_base_info', {
+        item_id_list: String(itemId),
+      })
+
+      const response = await fetch(url, {
+        signal: AbortSignal.timeout(10000),
+      })
+
+      if (!response.ok) return 0
+
+      const data = await response.json()
+      const item: ShopeeProduct | undefined = data.response?.item_list?.[0]
+      return item?.stock_info_v2?.summary_info?.total_available_stock ?? 0
+    } catch (error) {
+      console.error('Erro ao buscar estoque Shopee:', error)
+      return 0
+    }
+  }
+
+  /**
    * Verificar status da API
    */
   async checkStatus(): Promise<boolean> {
