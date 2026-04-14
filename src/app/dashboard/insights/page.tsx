@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Sparkles, TrendingUp, Package, AlertTriangle, DollarSign, BarChart3, ShoppingCart, Clock, Trash2, RefreshCw, Crown, Lock } from 'lucide-react';
 import { CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -499,15 +499,54 @@ export default function InsightsPage() {
       minute: '2-digit',
     });
 
-  const formatGenerationLabel = (gen: Generation): string => {
+  const renderGenerationLabel = (gen: Generation): React.ReactNode => {
     const date = new Date(gen.generated_at);
-    if (gen.source === 'alert_triggered') {
-      return `Disparado por alerta — ${date.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
-    }
+
     if (gen.source === 'automatic') {
-      return `Automatico — ${date.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })}`;
+      const dateStr = date.toLocaleDateString('pt-BR', {
+        weekday: 'short',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+      return (
+        <span className="flex items-center gap-1.5">
+          <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-400 border border-blue-500/20">
+            <Clock className="h-3 w-3" />
+            Geração automática
+          </span>
+          <span>{dateStr}</span>
+        </span>
+      );
     }
-    return date.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+    if (gen.source === 'alert_triggered') {
+      const dateStr = date.toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      return (
+        <span className="flex items-center gap-1.5">
+          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400 border border-amber-500/20">
+            <AlertTriangle className="h-3 w-3" />
+            Por alerta
+          </span>
+          <span>{dateStr}</span>
+        </span>
+      );
+    }
+
+    // Manual (default) — no badge, just date
+    return date.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   /**
@@ -561,7 +600,7 @@ export default function InsightsPage() {
               <SelectItem value="latest">Mais recente (atual)</SelectItem>
               {generations.map((g) => (
                 <SelectItem key={g.id} value={g.id}>
-                  {formatGenerationLabel(g)} ({g.insight_count})
+                  {renderGenerationLabel(g)} ({g.insight_count})
                 </SelectItem>
               ))}
             </SelectContent>
@@ -913,7 +952,7 @@ export default function InsightsPage() {
                   <SelectItem value="latest">Mais recente (atual)</SelectItem>
                   {generations.map((g) => (
                     <SelectItem key={g.id} value={g.id}>
-                      {formatGenerationLabel(g)} ({g.insight_count})
+                      {renderGenerationLabel(g)} ({g.insight_count})
                     </SelectItem>
                   ))}
                 </SelectContent>
