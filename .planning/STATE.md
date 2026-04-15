@@ -2,25 +2,24 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
-status: in_progress
-last_updated: "2026-04-15T10:05:01Z"
-last_activity: 2026-04-15
+status: executing
+last_updated: "2026-04-15T10:02:34.615Z"
+last_activity: 2026-04-15 -- Phase 13 execution started
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 2
   total_plans: 3
-  completed_plans: 3
+  completed_plans: 2
 ---
 
 # GSD State
 
 ## Current Position
 
-Phase: 13
-Plan: 01 (complete)
-Status: Phase 13 complete — plan 13-01 done
-Last activity: 2026-04-15
-Stopped at: Completed 13-01-PLAN.md
+Phase: 13 (loss-calculator-on-landing-page) — EXECUTING
+Plan: 1 of 1
+Status: Executing Phase 13
+Last activity: 2026-04-15 -- Phase 13 execution started
 
 ## Milestone
 
@@ -33,14 +32,6 @@ v1.1 — Insights IA + Melhorias de Produto
 | 9 | Rastreamento de Ações | ✅ done (commit b3c01a2) |
 | 10 | Histórico de Insights | ✅ done (commit f436383) |
 | 11 | Auto Weekly AI Insights | ✅ done (commit 619f841) |
-| 12 | Post-Alert Guided Diagnosis | ✅ done (commit 0169acc) |
-| 13 | Loss Calculator on Landing Page | ✅ done (commit 558695d) |
-
-## Decisions
-
-- Calculator is a standalone Client Component — avoids converting entire landing page to `use client`
-- 720 hours divisor (30d * 24h) for monthly-to-hourly revenue conversion
-- BRL input parser strips non-numeric except comma/period (supports "50.000" format)
 
 ## Accumulated Context
 
@@ -59,4 +50,3 @@ v1.1 — Insights IA + Melhorias de Produto
 - Phase 12: DIAGNOSIS_CHECKLISTS lookup map in src/lib/alert-checklists.ts — hard-coded per alert type, no DB table
 - Phase 12: AlertDiagnosisCard component in src/components/alerts/ — pure presentational, orange theme (bg-orange-500/5)
 - Phase 12: Conditional render gate: severity === 'critical' && DIAGNOSIS_CHECKLISTS[alert.type] — unmapped types silently skip
-- Phase 13: LossCalculator in src/components/loss-calculator.tsx — 'use client', live BRL calc, hourly loss + 20% drop
