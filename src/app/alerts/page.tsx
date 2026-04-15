@@ -12,6 +12,8 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { exportToCSV, formatAlertForExport } from '@/lib/export-utils'
 import { logAudit, AuditActions, EntityTypes } from '@/lib/audit-logger'
+import { DIAGNOSIS_CHECKLISTS } from '@/lib/alert-checklists'
+import { AlertDiagnosisCard } from '@/components/alerts/alert-diagnosis-card'
 
 export default function AlertsPage() {
   const [alerts, setAlerts] = useState<any[]>([])
@@ -789,6 +791,12 @@ export default function AlertsPage() {
                     </div>
                   </div>
                 </CardContent>
+                {alert.severity === 'critical' && DIAGNOSIS_CHECKLISTS[alert.type] && (
+                  <AlertDiagnosisCard
+                    title={DIAGNOSIS_CHECKLISTS[alert.type].title}
+                    items={DIAGNOSIS_CHECKLISTS[alert.type].items}
+                  />
+                )}
               </Card>
             ))}
           </div>
