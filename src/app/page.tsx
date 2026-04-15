@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Navbar } from '@/components/navbar'
+import { LossCalculator } from '@/components/loss-calculator'
 import { LogoIcon } from '@/components/ui/logo'
 import { 
   ShoppingCart, 
@@ -202,6 +203,11 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* Loss Calculator Section */}
+        <section id="calculator" className="container py-24">
+          <LossCalculator />
         </section>
 
         {/* Features Section */}
