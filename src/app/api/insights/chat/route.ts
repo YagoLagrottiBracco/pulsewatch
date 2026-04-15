@@ -4,7 +4,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
 const DAILY_LIMITS: Record<string, number> = { business: 10, agency: 30 };
 
