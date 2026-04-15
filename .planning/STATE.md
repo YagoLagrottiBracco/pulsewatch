@@ -3,23 +3,23 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
 status: verifying
-last_updated: "2026-04-15T15:05:58.781Z"
+last_updated: "2026-04-15T19:32:24.922Z"
 last_activity: 2026-04-15
 progress:
   total_phases: 5
-  completed_phases: 3
-  total_plans: 4
-  completed_plans: 4
+  completed_phases: 4
+  total_plans: 5
+  completed_plans: 5
 ---
 
 # GSD State
 
 ## Current Position
 
-Phase: 14
-Plan: Not started
+Phase: 14 (csv-export) — COMPLETE
+Plan: 1 of 1 (done)
 Status: Phase complete — ready for verification
-Last activity: 2026-04-15
+Last activity: 2026-04-15 -- Phase 14 plan 01 executed (commits 6efbc9f, 58757cf)
 
 ## Milestone
 
@@ -50,3 +50,6 @@ v1.1 — Insights IA + Melhorias de Produto
 - Phase 12: DIAGNOSIS_CHECKLISTS lookup map in src/lib/alert-checklists.ts — hard-coded per alert type, no DB table
 - Phase 12: AlertDiagnosisCard component in src/components/alerts/ — pure presentational, orange theme (bg-orange-500/5)
 - Phase 12: Conditional render gate: severity === 'critical' && DIAGNOSIS_CHECKLISTS[alert.type] — unmapped types silently skip
+- Phase 14: Date filter on alerts page uses Aplicar Filtro button (no live-filter on keystroke) — AND-combined with read/unread filter
+- Phase 14: Ate boundary fix: setHours(23,59,59,999) ensures full day inclusion
+- Phase 14: rawAlerts state in analytics page holds loaded alerts; local variable renamed to alertsData to avoid collision

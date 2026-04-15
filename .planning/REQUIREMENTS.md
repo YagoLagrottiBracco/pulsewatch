@@ -22,9 +22,9 @@
 
 ## Exportação de Dados
 
-- [ ] **EXP-01**: Usuário pode exportar alertas filtrados por período em CSV
-- [ ] **EXP-02**: Usuário pode exportar dados de analytics (vendas, uptime) em CSV
-- [ ] **EXP-03**: Exportação é gerada client-side (sem dependência de biblioteca externa)
+- [x] **EXP-01**: Usuário pode exportar alertas filtrados por período em CSV
+- [x] **EXP-02**: Usuário pode exportar dados de analytics (vendas, uptime) em CSV
+- [x] **EXP-03**: Exportação é gerada client-side (sem dependência de biblioteca externa)
 
 ## Times e Atividade
 

@@ -10,8 +10,8 @@
 
 - [x] **Phase 11: Auto Weekly AI Insights** - Generate AI insights automatically every Monday for business+ users (completed 2026-04-14)
 - [x] **Phase 12: Post-Alert Guided Diagnosis** - Show contextual "what to do now" checklists when users view critical alerts (completed 2026-04-15)
-- [x] **Phase 13: Loss Calculator on Landing Page** - Add an interactive downtime loss calculator to the landing page (completed 2026-04-15)
-- [ ] **Phase 14: CSV Export** - Allow users to export alerts and analytics data as CSV files
+- [x] **Phase 13: Loss Calculator on Landing Page** - Add an interactive downtime loss calculator to the landing page (completed 2026-04-15)
+- [x] **Phase 14: CSV Export** - Allow users to export alerts and analytics data as CSV files (completed 2026-04-15)
 - [ ] **Phase 15: Team Activity Feed** - Give owners visibility into what each team member has done
 
 ---
@@ -63,7 +63,9 @@ Plans:
   1. On the alerts page, a user can select a date range and download a CSV containing only the alerts from that period
   2. On the analytics page, a user can download a CSV with sales and uptime data
   3. Both CSV downloads happen entirely in the browser — no server endpoint is called to generate the file
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [x] 14-01-PLAN.md — Add date-range filter to alerts page and CSV export to analytics page
 
 ### Phase 15: Team Activity Feed
 **Goal**: Account owners can see a chronological log of actions each team member has taken on alerts
@@ -84,7 +86,7 @@ Plans:
 | 11. Auto Weekly AI Insights | 1/1 | Complete    | 2026-04-14 |
 | 12. Post-Alert Guided Diagnosis | 1/1 | Complete    | 2026-04-15 |
 | 13. Loss Calculator on Landing Page | 0/1 | Complete    | 2026-04-15 |
-| 14. CSV Export | 0/? | Not started | - |
+| 14. CSV Export | 1/1 | Complete   | 2026-04-15 |
 | 15. Team Activity Feed | 0/? | Not started | - |
 
 ---
@@ -115,4 +117,4 @@ Plans:
 
 ---
 
-*Last updated: 2026-04-15 — Phase 13 planned*
+*Last updated: 2026-04-15 — Phase 14 planned*
