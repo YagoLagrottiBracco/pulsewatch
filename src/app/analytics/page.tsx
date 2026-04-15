@@ -5,8 +5,10 @@ import DashboardLayout from '@/components/dashboard-layout'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { TrendingUp, Package, DollarSign, AlertCircle } from 'lucide-react'
+import { TrendingUp, Package, DollarSign, AlertCircle, Download } from 'lucide-react'
+import { exportToCSV, formatAlertForExport } from '@/lib/export-utils'
 
 interface AlertStats {
   date: string
@@ -27,6 +29,7 @@ export default function AnalyticsPage() {
   const [severityData, setSeverityData] = useState<any[]>([])
   const [totalAlerts, setTotalAlerts] = useState(0)
   const [avgAlertsPerDay, setAvgAlertsPerDay] = useState(0)
+  const [rawAlerts, setRawAlerts] = useState<any[]>([])
 
   useEffect(() => {
     loadAnalytics()
@@ -66,20 +69,21 @@ export default function AnalyticsPage() {
       return
     }
 
-    const { data: alerts } = await supabase
+    const { data: alertsData } = await supabase
       .from('alerts')
       .select('*, stores(name)')
       .in('store_id', storeIds)
       .gte('created_at', startDate.toISOString())
       .order('created_at', { ascending: true })
 
-    if (!alerts) {
+    if (!alertsData) {
       setLoading(false)
       return
     }
 
-    setTotalAlerts(alerts.length)
-    setAvgAlertsPerDay(Number((alerts.length / daysAgo).toFixed(1)))
+    setRawAlerts(alertsData || [])
+    setTotalAlerts(alertsData.length)
+    setAvgAlertsPerDay(Number((alertsData.length / daysAgo).toFixed(1)))
 
     const alertsByDate: Record<string, number> = {}
     const alertsByStore: Record<string, { alerts: number, products: number }> = {}
@@ -90,7 +94,7 @@ export default function AnalyticsPage() {
       critical: 0
     }
 
-    alerts.forEach(alert => {
+    alertsData.forEach(alert => {
       const date = new Date(alert.created_at).toLocaleDateString('pt-BR', {
         day: '2-digit',
         month: '2-digit'
@@ -177,13 +181,27 @@ export default function AnalyticsPage() {
               Análise detalhada dos seus alertas e métricas
             </p>
           </div>
-          <Tabs value={timeRange} onValueChange={(v: string) => setTimeRange(v as any)}>
-            <TabsList>
-              <TabsTrigger value="7d">7 dias</TabsTrigger>
-              <TabsTrigger value="30d">30 dias</TabsTrigger>
-              <TabsTrigger value="90d">90 dias</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex items-center gap-2">
+            <Tabs value={timeRange} onValueChange={(v: string) => setTimeRange(v as any)}>
+              <TabsList>
+                <TabsTrigger value="7d">7 dias</TabsTrigger>
+                <TabsTrigger value="30d">30 dias</TabsTrigger>
+                <TabsTrigger value="90d">90 dias</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            {rawAlerts.length > 0 && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const exportData = rawAlerts.map(formatAlertForExport)
+                  exportToCSV(exportData, 'analytics-pulsewatch')
+                }}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Exportar CSV
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
