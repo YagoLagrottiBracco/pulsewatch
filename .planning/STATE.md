@@ -2,24 +2,24 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
-status: completed
-last_updated: "2026-04-14T23:50:17.056Z"
-last_activity: 2026-04-14
+status: verifying
+last_updated: "2026-04-15T03:07:31.352Z"
+last_activity: 2026-04-15
 progress:
   total_phases: 5
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
+  completed_phases: 2
+  total_plans: 2
+  completed_plans: 2
 ---
 
 # GSD State
 
 ## Current Position
 
-Phase: 12
-Plan: Not started
-Status: Phase 11 complete — all requirements INS-01 through INS-04 satisfied
-Last activity: 2026-04-14
+Phase: 12 (post-alert-guided-diagnosis) — EXECUTING
+Plan: 1 of 1
+Status: Phase complete — ready for verification
+Last activity: 2026-04-15
 
 ## Milestone
 
@@ -47,3 +47,6 @@ v1.1 — Insights IA + Melhorias de Produto
 - renderGenerationLabel retorna React.ReactNode (não string) para suportar JSX badges dentro de Radix SelectItem
 - Badge automático usa bg-blue-500/10 / text-blue-600; badge alert_triggered usa bg-amber-500/10 / text-amber-600
 - Cron semanal de insights: /api/cron/weekly-insights — tier gate business/agency, deduplication 6 dias
+- Phase 12: DIAGNOSIS_CHECKLISTS lookup map in src/lib/alert-checklists.ts — hard-coded per alert type, no DB table
+- Phase 12: AlertDiagnosisCard component in src/components/alerts/ — pure presentational, orange theme (bg-orange-500/5)
+- Phase 12: Conditional render gate: severity === 'critical' && DIAGNOSIS_CHECKLISTS[alert.type] — unmapped types silently skip

@@ -9,7 +9,7 @@
 ## Phases
 
 - [x] **Phase 11: Auto Weekly AI Insights** - Generate AI insights automatically every Monday for business+ users (completed 2026-04-14)
-- [ ] **Phase 12: Post-Alert Guided Diagnosis** - Show contextual "what to do now" checklists when users view critical alerts
+- [x] **Phase 12: Post-Alert Guided Diagnosis** - Show contextual "what to do now" checklists when users view critical alerts (completed 2026-04-15)
 - [ ] **Phase 13: Loss Calculator on Landing Page** - Add an interactive downtime loss calculator to the landing page
 - [ ] **Phase 14: CSV Export** - Allow users to export alerts and analytics data as CSV files
 - [ ] **Phase 15: Team Activity Feed** - Give owners visibility into what each team member has done
@@ -37,7 +37,9 @@
   1. When a user opens a critical alert, a "O que fazer agora" card is visible on the alert detail view
   2. The checklist items differ depending on alert type — a store offline alert shows different steps than a low stock alert
   3. All four covered alert types (loja offline, estoque zerado, estoque baixo, queda de vendas) display their own specific checklist
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [x] 12-01-PLAN.md — Create diagnosis checklist data, component, and wire into alerts page
 **UI hint**: yes
 
 ### Phase 13: Loss Calculator on Landing Page
@@ -78,7 +80,7 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 11. Auto Weekly AI Insights | 1/1 | Complete    | 2026-04-14 |
-| 12. Post-Alert Guided Diagnosis | 0/? | Not started | - |
+| 12. Post-Alert Guided Diagnosis | 1/1 | Complete   | 2026-04-15 |
 | 13. Loss Calculator on Landing Page | 0/? | Not started | - |
 | 14. CSV Export | 0/? | Not started | - |
 | 15. Team Activity Feed | 0/? | Not started | - |
@@ -111,4 +113,4 @@
 
 ---
 
-*Last updated: 2026-04-14 — Roadmap created for milestone v1.1*
+*Last updated: 2026-04-14 — Phase 12 planned*

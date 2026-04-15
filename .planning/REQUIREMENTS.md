@@ -9,9 +9,9 @@
 
 ## Alertas e UX
 
-- [ ] **ALERT-01**: Ao visualizar um alerta crítico, usuário vê card "O que fazer agora" com checklist específico por tipo de problema
-- [ ] **ALERT-02**: Checklist cobre os tipos: loja offline, estoque zerado, estoque baixo, queda de vendas
-- [ ] **ALERT-03**: Card é contextual ao tipo do alerta — não genérico
+- [x] **ALERT-01**: Ao visualizar um alerta crítico, usuário vê card "O que fazer agora" com checklist específico por tipo de problema
+- [x] **ALERT-02**: Checklist cobre os tipos: loja offline, estoque zerado, estoque baixo, queda de vendas
+- [x] **ALERT-03**: Card é contextual ao tipo do alerta — não genérico
 
 ## Landing Page
 
