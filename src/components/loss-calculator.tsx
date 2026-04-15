@@ -30,6 +30,7 @@ export function LossCalculator() {
   // 30 days * 24 hours = 720 hours per month
   const hourlyLoss = monthlyRevenue / 720
   const salesDropImpact = monthlyRevenue * 0.20
+  const accumulated = hourlyLoss * 5
 
   const hasValue = monthlyRevenue > 0
 
@@ -121,23 +122,35 @@ export function LossCalculator() {
             </div>
           </div>
 
+          {/* Accumulated 5h/month estimate */}
+          {hasValue && (
+            <div className="rounded-xl bg-destructive/5 border border-destructive/20 p-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                Com <strong className="text-foreground">5h/mês</strong> de downtime, sua perda estimada seria de{' '}
+                <strong className="text-destructive text-lg font-black">{formatBRL(accumulated)}</strong>
+              </p>
+            </div>
+          )}
+
           {/* CTA */}
           <div className="pt-2 text-center space-y-3">
             {hasValue && (
-              <p className="text-sm text-muted-foreground">
-                Com o PulseWatch, você seria alertado em <strong className="text-foreground">menos de 1 minuto</strong> — antes que a perda se acumule.
-              </p>
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Com o PulseWatch, você seria alertado em <strong className="text-foreground">menos de 1 minuto</strong> — antes que a perda se acumule.
+                </p>
+                <Link href="/auth/signup" className="inline-block w-full sm:w-auto">
+                  <Button
+                    size="lg"
+                    className="w-full sm:w-auto h-12 px-8 text-base font-semibold bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 shadow-lg hover:shadow-primary/40 transition-all hover:scale-105 group"
+                  >
+                    Proteger Minha Loja Agora
+                    <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+                <p className="text-xs text-muted-foreground">Grátis por 7 dias. Sem cartão de crédito.</p>
+              </>
             )}
-            <Link href="/auth/signup" className="inline-block w-full sm:w-auto">
-              <Button
-                size="lg"
-                className="w-full sm:w-auto h-12 px-8 text-base font-semibold bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 shadow-lg hover:shadow-primary/40 transition-all hover:scale-105 group"
-              >
-                Proteger Minha Loja Agora
-                <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
-            <p className="text-xs text-muted-foreground">Grátis por 7 dias. Sem cartão de crédito.</p>
           </div>
         </CardContent>
       </Card>
