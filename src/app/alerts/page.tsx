@@ -19,6 +19,9 @@ export default function AlertsPage() {
   const [alerts, setAlerts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all')
+  const [dateFrom, setDateFrom] = useState<string>('')
+  const [dateTo, setDateTo] = useState<string>('')
+  const [dateApplied, setDateApplied] = useState<{ from: string; to: string } | null>(null)
   const [stores, setStores] = useState<any[]>([])
   const [selectedStoreId, setSelectedStoreId] = useState<string>('global')
   const [loadingStoreRules, setLoadingStoreRules] = useState(false)
@@ -430,8 +433,21 @@ export default function AlertsPage() {
   }
 
   const filteredAlerts = alerts.filter((alert) => {
-    if (filter === 'unread') return !alert.is_read
-    if (filter === 'read') return alert.is_read
+    if (filter === 'unread' && alert.is_read) return false
+    if (filter === 'read' && !alert.is_read) return false
+    if (dateApplied) {
+      const created = new Date(alert.created_at)
+      if (dateApplied.from) {
+        const from = new Date(dateApplied.from)
+        from.setHours(0, 0, 0, 0)
+        if (created < from) return false
+      }
+      if (dateApplied.to) {
+        const to = new Date(dateApplied.to)
+        to.setHours(23, 59, 59, 999)
+        if (created > to) return false
+      }
+    }
     return true
   })
 
@@ -664,8 +680,8 @@ export default function AlertsPage() {
         </Card>
 
         {/* Filter Tabs */}
-        <div className="flex gap-2 justify-between items-center">
-          <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap justify-between items-center">
+          <div className="flex gap-2 flex-wrap items-center">
             <Button
               variant={filter === 'all' ? 'default' : 'outline'}
               onClick={() => setFilter('all')}
@@ -684,8 +700,42 @@ export default function AlertsPage() {
             >
               Lidos ({alerts.length - unreadCount})
             </Button>
+            <div className="flex items-center gap-2 border rounded-md px-3 py-1">
+              <Label htmlFor="dateFrom" className="text-sm whitespace-nowrap">De</Label>
+              <Input
+                id="dateFrom"
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="h-8 w-auto"
+              />
+              <Label htmlFor="dateTo" className="text-sm whitespace-nowrap">Ate</Label>
+              <Input
+                id="dateTo"
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="h-8 w-auto"
+              />
+              <Button
+                size="sm"
+                variant="default"
+                onClick={() => setDateApplied({ from: dateFrom, to: dateTo })}
+              >
+                Aplicar Filtro
+              </Button>
+              {dateApplied && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => { setDateFrom(''); setDateTo(''); setDateApplied(null) }}
+                >
+                  Limpar
+                </Button>
+              )}
+            </div>
           </div>
-          
+
           {alerts.length > 0 && (
             <Button
               variant="outline"
