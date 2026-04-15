@@ -80,7 +80,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 11. Auto Weekly AI Insights | 1/1 | Complete    | 2026-04-14 |
-| 12. Post-Alert Guided Diagnosis | 1/1 | Complete   | 2026-04-15 |
+| 12. Post-Alert Guided Diagnosis | 1/1 | Complete    | 2026-04-15 |
 | 13. Loss Calculator on Landing Page | 0/? | Not started | - |
 | 14. CSV Export | 0/? | Not started | - |
 | 15. Team Activity Feed | 0/? | Not started | - |
