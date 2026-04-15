@@ -15,10 +15,10 @@
 
 ## Landing Page
 
-- [ ] **LAND-01**: Landing page exibe calculadora interativa de perdas por downtime
-- [ ] **LAND-02**: Calculadora aceita faturamento mensal como input e calcula perda estimada por hora de downtime
-- [ ] **LAND-03**: Calculadora exibe também impacto de queda de 20% nas vendas
-- [ ] **LAND-04**: Widget é visualmente consistente com o design system existente
+- [x] **LAND-01**: Landing page exibe calculadora interativa de perdas por downtime
+- [x] **LAND-02**: Calculadora aceita faturamento mensal como input e calcula perda estimada por hora de downtime
+- [x] **LAND-03**: Calculadora exibe também impacto de queda de 20% nas vendas
+- [x] **LAND-04**: Widget é visualmente consistente com o design system existente
 
 ## Exportação de Dados
 

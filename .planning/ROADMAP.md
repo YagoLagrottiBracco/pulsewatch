@@ -10,7 +10,7 @@
 
 - [x] **Phase 11: Auto Weekly AI Insights** - Generate AI insights automatically every Monday for business+ users (completed 2026-04-14)
 - [x] **Phase 12: Post-Alert Guided Diagnosis** - Show contextual "what to do now" checklists when users view critical alerts (completed 2026-04-15)
-- [ ] **Phase 13: Loss Calculator on Landing Page** - Add an interactive downtime loss calculator to the landing page
+- [x] **Phase 13: Loss Calculator on Landing Page** - Add an interactive downtime loss calculator to the landing page (completed 2026-04-15)
 - [ ] **Phase 14: CSV Export** - Allow users to export alerts and analytics data as CSV files
 - [ ] **Phase 15: Team Activity Feed** - Give owners visibility into what each team member has done
 
@@ -50,7 +50,9 @@ Plans:
   1. A visitor can type their monthly revenue into the calculator and immediately see an estimated hourly loss from downtime
   2. The calculator also displays the estimated impact of a 20% sales drop alongside the downtime loss figure
   3. The calculator widget uses the same visual language (colors, typography, component style) as the rest of the landing page and product
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [x] 13-01-PLAN.md — Create LossCalculator client component and wire into landing page
 **UI hint**: yes
 
 ### Phase 14: CSV Export
@@ -81,7 +83,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 11. Auto Weekly AI Insights | 1/1 | Complete    | 2026-04-14 |
 | 12. Post-Alert Guided Diagnosis | 1/1 | Complete    | 2026-04-15 |
-| 13. Loss Calculator on Landing Page | 0/? | Not started | - |
+| 13. Loss Calculator on Landing Page | 1/1 | Complete    | 2026-04-15 |
 | 14. CSV Export | 0/? | Not started | - |
 | 15. Team Activity Feed | 0/? | Not started | - |
 
