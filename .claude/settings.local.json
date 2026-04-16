@@ -10,7 +10,9 @@
       "Bash(node \"$HOME/.claude/get-shit-done/bin/gsd-tools.cjs\" phase complete 13)",
       "Bash(node \"$HOME/.claude/get-shit-done/bin/gsd-tools.cjs\" commit \"docs\\(phase-13\\): complete phase execution\" --files .planning/ROADMAP.md .planning/STATE.md \".planning/phases/13-loss-calculator-on-landing-page/13-VERIFICATION.md\")",
       "Skill(gsd:autonomous)",
-      "Skill(gsd:ui-phase)"
+      "Skill(gsd:ui-phase)",
+      "Bash(date:*)",
+      "Bash(node:*)"
     ]
   }
 }

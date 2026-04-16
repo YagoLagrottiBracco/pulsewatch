@@ -86,7 +86,7 @@ Plans:
 | 11. Auto Weekly AI Insights | 1/1 | Complete    | 2026-04-14 |
 | 12. Post-Alert Guided Diagnosis | 1/1 | Complete    | 2026-04-15 |
 | 13. Loss Calculator on Landing Page | 0/1 | Complete    | 2026-04-15 |
-| 14. CSV Export | 1/1 | Complete   | 2026-04-15 |
+| 14. CSV Export | 1/1 | Complete   | 2026-04-16 |
 | 15. Team Activity Feed | 0/? | Not started | - |
 
 ---
