@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { captureError } from '@/lib/sentry'
 
 export async function GET(
   _request: NextRequest,
@@ -61,6 +62,7 @@ export async function GET(
       insights: insights ?? [],
     });
   } catch (error: any) {
+    captureError(error, { module: 'src\app\api\share\:token\route.ts' })
     console.error('Share fetch error:', error);
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
   }

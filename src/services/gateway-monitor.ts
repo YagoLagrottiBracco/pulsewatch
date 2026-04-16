@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { captureStoreError } from '@/lib/sentry'
 
 export type GatewayName = 'pix' | 'pagseguro' | 'mercadopago' | 'cielo'
 export type GatewayStatus = 'online' | 'offline' | 'degraded' | 'unknown'
@@ -79,6 +80,7 @@ async function checkSingleGateway(config: GatewayConfig): Promise<GatewayCheckRe
 
     return { gateway: config.name, status, responseTimeMs }
   } catch (error) {
+    captureStoreError(`gateway:${config.name}`, error, { gateway: config.name })
     return {
       gateway: config.name,
       status: 'offline',

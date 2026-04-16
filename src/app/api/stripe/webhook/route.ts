@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
+import { captureError } from '@/lib/sentry'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-10-16',
@@ -19,6 +20,7 @@ export async function POST(request: NextRequest) {
       process.env.STRIPE_WEBHOOK_SECRET!
     )
   } catch (err: any) {
+    captureError(err, { module: 'stripe/webhook', extra: { reason: 'signature_verification' } })
     console.error('Webhook signature verification failed:', err.message)
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
@@ -122,6 +124,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ received: true })
   } catch (error: any) {
+    captureError(error, { module: 'stripe/webhook', extra: { eventType: event?.type } })
     console.error('Webhook handler error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

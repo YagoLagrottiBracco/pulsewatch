@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { acceptInvite } from '@/services/team'
+import { captureError } from '@/lib/sentry'
 
 // POST /api/team/accept-invite — aceitar convite
 export async function POST(request: NextRequest) {
@@ -23,6 +24,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
+    captureError(error, { module: 'src\app\api\team\accept-invite\route.ts' })
     console.error('Erro ao aceitar convite:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

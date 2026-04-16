@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { captureError } from '@/lib/sentry'
 
 const ADVANCED_MONITORING_TIERS = ['pro', 'business', 'agency']
 
@@ -75,6 +76,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, updated: updateData })
   } catch (error) {
+    captureError(error, { module: 'src\app\api\stores\update-monitors\route.ts' })
     console.error('Error in update-monitors:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

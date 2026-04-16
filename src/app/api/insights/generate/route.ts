@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { generateInsightsForUser } from '@/services/ai-insights';
+import { captureError } from '@/lib/sentry'
 
 export async function POST(request: NextRequest) {
   try {
@@ -81,6 +82,7 @@ export async function POST(request: NextRequest) {
       generationId,
     });
   } catch (error: any) {
+    captureError(error, { module: 'src\app\api\insights\generate\route.ts' })
     console.error('Generate insights error:', error);
 
     // Log failed generation

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { captureError } from '@/lib/sentry'
 
 export async function POST(request: NextRequest) {
   try {
@@ -57,6 +58,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ valid: true, shopName })
   } catch (error: any) {
+    captureError(error, { module: 'src\app\api\stores\validate-shopify\route.ts' })
     const isTimeout = error?.name === 'TimeoutError' || error?.name === 'AbortError'
 
     return NextResponse.json(

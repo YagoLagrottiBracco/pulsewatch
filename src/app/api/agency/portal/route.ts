@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { generatePortalToken, validatePortalToken } from '@/services/agency'
+import { captureError } from '@/lib/sentry'
 
 // POST /api/agency/portal — gerar token de portal
 export async function POST(request: NextRequest) {
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest) {
     const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL}/portal/${result.token}`
     return NextResponse.json({ token: result.token, portalUrl })
   } catch (error) {
+    captureError(error, { module: 'src\app\api\agency\portal\route.ts' })
     console.error('Erro ao gerar portal token:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -54,6 +56,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(result)
   } catch (error) {
+    captureError(error, { module: 'src\app\api\agency\portal\route.ts' })
     console.error('Erro ao validar portal token:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { captureError } from '@/lib/sentry'
 import { sendNotifications } from '@/services/notification'
 import { NuvemshopClient } from '@/integrations/nuvemshop'
 import { TrayClient } from '@/integrations/tray'
@@ -307,6 +308,7 @@ export async function GET(request: NextRequest) {
       results,
     })
   } catch (error: any) {
+    captureError(error, { module: 'cron/check-status' })
     console.error('Erro no cron job:', error)
     return NextResponse.json(
       { error: error.message },

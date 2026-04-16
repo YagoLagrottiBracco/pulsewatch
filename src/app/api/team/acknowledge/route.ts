@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { acknowledgeAlert, getAlertAcknowledgments } from '@/services/team'
+import { captureError } from '@/lib/sentry'
 
 // POST /api/team/acknowledge — reconhecer alerta
 export async function POST(request: NextRequest) {
@@ -18,6 +19,7 @@ export async function POST(request: NextRequest) {
     const result = await acknowledgeAlert(alertId, user.id, note)
     return NextResponse.json(result)
   } catch (error) {
+    captureError(error, { module: 'src\app\api\team\acknowledge\route.ts' })
     console.error('Erro ao reconhecer alerta:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -40,6 +42,7 @@ export async function GET(request: NextRequest) {
     const acknowledgments = await getAlertAcknowledgments(alertId)
     return NextResponse.json({ acknowledgments })
   } catch (error) {
+    captureError(error, { module: 'src\app\api\team\acknowledge\route.ts' })
     console.error('Erro ao listar reconhecimentos:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { generateStockForecast } from '@/services/stock-forecast'
+import { captureError } from '@/lib/sentry'
 
 export async function GET() {
   try {
@@ -29,6 +30,7 @@ export async function GET() {
 
     return NextResponse.json(result)
   } catch (error) {
+    captureError(error, { module: 'src\app\api\stock-forecast\route.ts' })
     console.error('Erro ao gerar previsão de estoque:', error)
     return NextResponse.json(
       { error: 'Internal server error' },

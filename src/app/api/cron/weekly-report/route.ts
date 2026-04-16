@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendWeeklyReports } from '@/services/weekly-report'
+import { captureError } from '@/lib/sentry'
 
 // Vercel Cron: toda segunda-feira às 8h (horário de Brasília = 11h UTC)
 export async function GET(request: NextRequest) {
@@ -17,6 +18,7 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
+    captureError(error, { module: 'src\app\api\cron\weekly-report\route.ts' })
     console.error('Erro no cron de relatório semanal:', error)
     return NextResponse.json(
       { error: 'Internal server error' },

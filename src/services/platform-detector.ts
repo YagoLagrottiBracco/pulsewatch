@@ -184,7 +184,11 @@ export async function detectPlatform(domain: string): Promise<PlatformDetectionR
       indicators,
     }
   } catch (error: any) {
-    console.error('Erro na detecção de plataforma:', error)
+    const { captureError } = await import('@/lib/sentry')
+    captureError(error, {
+      module: 'platform-detector',
+      extra: { domain: cleanDomain },
+    })
     return {
       platform: null,
       confidence: 0,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { captureError } from '@/lib/sentry'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -43,6 +44,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true })
   } catch (error) {
+    captureError(error, { module: 'src\app\api\telegram\connect\route.ts' })
     console.error('Erro ao salvar username Telegram:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
@@ -120,6 +122,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ connected: true, chatId })
   } catch (error) {
+    captureError(error, { module: 'src\app\api\telegram\connect\route.ts' })
     console.error('Erro ao verificar conexão Telegram:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }

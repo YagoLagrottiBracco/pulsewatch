@@ -1,3 +1,5 @@
+const { withSentryConfig } = require('@sentry/nextjs')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -37,4 +39,19 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
+module.exports = withSentryConfig(nextConfig, {
+  // Org e projeto do Sentry (configurar no .env)
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  // Silencia logs do Sentry durante build
+  silent: !process.env.CI,
+  // Desabilita upload de source maps em dev
+  disableServerWebpackPlugin: process.env.NODE_ENV !== 'production',
+  disableClientWebpackPlugin: process.env.NODE_ENV !== 'production',
+  // Esconde source maps do cliente em produção
+  hideSourceMaps: true,
+  // Tunneling para evitar bloqueio de ad blockers
+  tunnelRoute: '/monitoring',
+  // Desabilita logger do SDK no client
+  disableLogger: true,
+})

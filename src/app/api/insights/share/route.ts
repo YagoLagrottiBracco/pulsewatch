@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { captureError } from '@/lib/sentry'
 
 // Expiração padrão: 30 dias
 const SHARE_EXPIRY_DAYS = 30;
@@ -82,6 +83,7 @@ export async function POST(request: NextRequest) {
       shareUrl: `/share/${link.token}`,
     });
   } catch (error: any) {
+    captureError(error, { module: 'src\app\api\insights\share\route.ts' })
     console.error('Share create error:', error);
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
   }

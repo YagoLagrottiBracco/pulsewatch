@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import type { UpsertActionBody, ActionStatus } from '@/types/recommendation-actions';
+import { captureError } from '@/lib/sentry'
 
 const VALID_STATUSES: ActionStatus[] = ['pending', 'in_progress', 'done', 'ignored'];
 
@@ -60,6 +61,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    captureError(error, { module: 'src\app\api\insights\actions\route.ts' })
     console.error('POST /api/insights/actions error:', error);
     return NextResponse.json({ error: 'Erro interno', message: error.message }, { status: 500 });
   }

@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { captureError } from '@/lib/sentry'
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY || '');
 const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
@@ -142,6 +143,7 @@ Responda de forma objetiva, citando dados específicos quando relevante. Não in
           }
         }
       } catch (err: any) {
+        captureError(err, { module: 'insights/chat', extra: { phase: 'gemini_stream' } })
         const detail = err?.message || String(err);
         console.error('Gemini stream error:', detail, err);
         const errorMsg = '\n\n[Erro ao gerar resposta]';

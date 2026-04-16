@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { generateInsightsForUser } from '@/services/ai-insights';
+import { captureError } from '@/lib/sentry'
 
 // Vercel Cron: toda segunda-feira às 9h (horário de Brasília = 12h UTC)
 export async function GET(request: NextRequest) {

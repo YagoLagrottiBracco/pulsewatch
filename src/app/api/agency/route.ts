@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import {
+import { captureError } from '@/lib/sentry'
   getAgencyDashboard,
   createWorkspace,
   deleteWorkspace,
@@ -34,6 +35,7 @@ export async function GET() {
     const data = await getAgencyDashboard(auth.user!.id)
     return NextResponse.json(data)
   } catch (error) {
+    captureError(error, { module: 'src\app\api\agency\route.ts' })
     console.error('Erro ao buscar dashboard agência:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -64,6 +66,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ workspace: result.workspace })
   } catch (error) {
+    captureError(error, { module: 'src\app\api\agency\route.ts' })
     console.error('Erro na API de agência:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -84,6 +87,7 @@ export async function DELETE(request: NextRequest) {
     const result = await deleteWorkspace(auth.user!.id, workspaceId)
     return NextResponse.json(result)
   } catch (error) {
+    captureError(error, { module: 'src\app\api\agency\route.ts' })
     console.error('Erro ao remover workspace:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { captureError } from '@/lib/sentry'
 
 export async function DELETE(
   _request: NextRequest,
@@ -34,6 +35,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, revokedId: shareId });
   } catch (error: any) {
+    captureError(error, { module: 'src\app\api\insights\share\:shareId\route.ts' })
     console.error('Share revoke error:', error);
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
   }

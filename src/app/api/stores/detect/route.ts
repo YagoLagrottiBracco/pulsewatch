@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { detectPlatform } from '@/services/platform-detector'
+import { captureError } from '@/lib/sentry'
 
 export async function POST(request: NextRequest) {
   try {

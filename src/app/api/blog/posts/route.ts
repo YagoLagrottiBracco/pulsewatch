@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { captureError } from '@/lib/sentry'
 
 // GET - List all posts (public: published only, admin: all)
 export async function GET(request: NextRequest) {
