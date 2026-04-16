@@ -88,10 +88,6 @@ export function Navbar() {
           </div>
         </nav>
 
-          <button onClick={() => { throw new Error('Client-side Sentry test') }}>
-            Testar Sentry
-          </button>
-
         {/* Mobile hamburger */}
         <button
           className="md:hidden p-2 rounded-md hover:bg-muted transition-colors"
