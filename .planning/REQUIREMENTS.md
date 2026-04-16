@@ -29,7 +29,7 @@
 ## Times e Atividade
 
 - [ ] **TEAM-01**: Owner visualiza feed de atividade com ações de cada membro (visualizou alerta, arquivou, adicionou nota)
-- [ ] **TEAM-02**: Ações são registradas automaticamente ao interagir com alertas
+- [x] **TEAM-02**: Ações são registradas automaticamente ao interagir com alertas
 - [ ] **TEAM-03**: Feed exibe nome do membro, ação realizada e timestamp
 
 ## Future Requirements (deferred)

@@ -2,24 +2,24 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
-status: verifying
-last_updated: "2026-04-15T19:32:24.922Z"
-last_activity: 2026-04-15
+status: executing
+last_updated: "2026-04-16T02:14:43.251Z"
+last_activity: 2026-04-16
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 7
+  completed_plans: 6
 ---
 
 # GSD State
 
 ## Current Position
 
-Phase: 14 (csv-export) — COMPLETE
-Plan: 1 of 1 (done)
-Status: Phase complete — ready for verification
-Last activity: 2026-04-15 -- Phase 14 plan 01 executed (commits 6efbc9f, 58757cf)
+Phase: 15 (team-activity-feed) — EXECUTING
+Plan: 2 of 2
+Status: Executing Phase 15 — Plan 01 complete, Plan 02 next
+Last activity: 2026-04-15 -- Phase 15 Plan 01 completed
 
 ## Milestone
 
@@ -53,3 +53,6 @@ v1.1 — Insights IA + Melhorias de Produto
 - Phase 14: Date filter on alerts page uses Aplicar Filtro button (no live-filter on keystroke) — AND-combined with read/unread filter
 - Phase 14: Ate boundary fix: setHours(23,59,59,999) ensures full day inclusion
 - Phase 14: rawAlerts state in analytics page holds loaded alerts; local variable renamed to alertsData to avoid collision
+- Phase 15-01: ALERT_VIEWED: 'alert.viewed' added to AuditActions; markAsRead in alerts/page.tsx calls logAudit with ALERT_VIEWED after successful update
+- Phase 15-01: RLS policy "Owners can read team audit logs" uses subquery on account_members (not SECURITY DEFINER) -- additive, does not replace existing user policy
+- Phase 15-01: Partial index idx_account_members_owner_active_users WHERE user_id IS NOT NULL covers exact RLS subquery filter

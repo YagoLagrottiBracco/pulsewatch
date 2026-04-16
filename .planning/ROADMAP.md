@@ -77,7 +77,7 @@ Plans:
   3. Each feed entry clearly shows who did what and when, without requiring the owner to ask members directly
 **Plans**: 2 plans
 Plans:
-- [ ] 15-01-PLAN.md — Add ALERT_VIEWED audit action, wire into markAsRead, create RLS migration for team access
+- [x] 15-01-PLAN.md — Add ALERT_VIEWED audit action, wire into markAsRead, create RLS migration for team access
 - [ ] 15-02-PLAN.md — Refactor activity page with tabs, owner detection, and team feed UI
 **UI hint**: yes
 
@@ -91,7 +91,7 @@ Plans:
 | 12. Post-Alert Guided Diagnosis | 1/1 | Complete    | 2026-04-15 |
 | 13. Loss Calculator on Landing Page | 0/1 | Complete    | 2026-04-15 |
 | 14. CSV Export | 1/1 | Complete   | 2026-04-16 |
-| 15. Team Activity Feed | 0/2 | Planned | - |
+| 15. Team Activity Feed | 1/2 | In Progress|  |
 
 ---
 
