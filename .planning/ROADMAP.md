@@ -75,7 +75,11 @@ Plans:
   1. An owner navigates to a team or activity section and sees a feed listing recent member actions (viewed alert, archived, added note) with member name and timestamp
   2. When any team member interacts with an alert (views, archives, adds a note), that action is recorded automatically without any extra step from the member
   3. Each feed entry clearly shows who did what and when, without requiring the owner to ask members directly
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 15-01-PLAN.md — Add ALERT_VIEWED audit action, wire into markAsRead, create RLS migration for team access
+- [ ] 15-02-PLAN.md — Refactor activity page with tabs, owner detection, and team feed UI
+**UI hint**: yes
 
 ---
 
@@ -87,7 +91,7 @@ Plans:
 | 12. Post-Alert Guided Diagnosis | 1/1 | Complete    | 2026-04-15 |
 | 13. Loss Calculator on Landing Page | 0/1 | Complete    | 2026-04-15 |
 | 14. CSV Export | 1/1 | Complete   | 2026-04-16 |
-| 15. Team Activity Feed | 0/? | Not started | - |
+| 15. Team Activity Feed | 0/2 | Planned | - |
 
 ---
 
@@ -117,4 +121,4 @@ Plans:
 
 ---
 
-*Last updated: 2026-04-15 — Phase 14 planned*
+*Last updated: 2026-04-15 — Phase 15 planned*
