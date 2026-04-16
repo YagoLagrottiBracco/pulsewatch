@@ -32,6 +32,7 @@ export const AuditActions = {
   STORE_DELETED: 'store.deleted',
   ALERT_DISMISSED: 'alert.dismissed',
   ALERT_DELETED: 'alert.deleted',
+  ALERT_VIEWED: 'alert.viewed',
   RULE_CREATED: 'rule.created',
   RULE_UPDATED: 'rule.updated',
   RULE_DELETED: 'rule.deleted',

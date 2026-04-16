@@ -382,7 +382,14 @@ export default function AlertsPage() {
   const markAsRead = async (id: string) => {
     const supabase = createClient()
     const { error } = await supabase.from('alerts').update({ is_read: true }).eq('id', id)
-    if (!error) loadAlerts()
+    if (!error) {
+      await logAudit({
+        action: AuditActions.ALERT_VIEWED,
+        entity_type: EntityTypes.ALERT,
+        entity_id: id,
+      })
+      loadAlerts()
+    }
   }
 
   const markAllAsRead = async () => {
