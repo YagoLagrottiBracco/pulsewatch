@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     const result = await acknowledgeAlert(alertId, user.id, note)
     return NextResponse.json(result)
   } catch (error) {
-    captureError(error, { module: 'src\app\api\team\acknowledge\route.ts' })
+    captureError(error, { module: 'api/team/acknowledge' })
     console.error('Erro ao reconhecer alerta:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     const acknowledgments = await getAlertAcknowledgments(alertId)
     return NextResponse.json({ acknowledgments })
   } catch (error) {
-    captureError(error, { module: 'src\app\api\team\acknowledge\route.ts' })
+    captureError(error, { module: 'api/team/acknowledge' })
     console.error('Erro ao listar reconhecimentos:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

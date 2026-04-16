@@ -35,7 +35,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, revokedId: shareId });
   } catch (error: any) {
-    captureError(error, { module: 'src\app\api\insights\share\:shareId\route.ts' })
+    captureError(error, { module: 'api/insights/share/:shareId' })
     console.error('Share revoke error:', error);
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
   }

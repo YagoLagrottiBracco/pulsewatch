@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       shareUrl: `/share/${link.token}`,
     });
   } catch (error: any) {
-    captureError(error, { module: 'src\app\api\insights\share\route.ts' })
+    captureError(error, { module: 'api/insights/share' })
     console.error('Share create error:', error);
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
   }

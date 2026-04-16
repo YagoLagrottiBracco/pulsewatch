@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, updated: updateData })
   } catch (error) {
-    captureError(error, { module: 'src\app\api\stores\update-monitors\route.ts' })
+    captureError(error, { module: 'api/stores/update-monitors' })
     console.error('Error in update-monitors:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ valid: true, shopName })
   } catch (error: any) {
-    captureError(error, { module: 'src\app\api\stores\validate-shopify\route.ts' })
+    captureError(error, { module: 'api/stores/validate-shopify' })
     const isTimeout = error?.name === 'TimeoutError' || error?.name === 'AbortError'
 
     return NextResponse.json(

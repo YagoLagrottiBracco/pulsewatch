@@ -16,7 +16,7 @@ export async function GET() {
 
     return NextResponse.json(result)
   } catch (error) {
-    captureError(error, { module: 'src\app\api\uptime-sla\route.ts' })
+    captureError(error, { module: 'api/uptime-sla' })
     console.error('Erro ao calcular uptime/SLA:', error)
     return NextResponse.json(
       { error: 'Internal server error' },

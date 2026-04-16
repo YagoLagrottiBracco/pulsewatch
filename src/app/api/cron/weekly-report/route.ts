@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
-    captureError(error, { module: 'src\app\api\cron\weekly-report\route.ts' })
+    captureError(error, { module: 'api/cron/weekly-report' })
     console.error('Erro no cron de relatório semanal:', error)
     return NextResponse.json(
       { error: 'Internal server error' },

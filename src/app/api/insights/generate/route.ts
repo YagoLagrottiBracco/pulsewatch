@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       generationId,
     });
   } catch (error: any) {
-    captureError(error, { module: 'src\app\api\insights\generate\route.ts' })
+    captureError(error, { module: 'api/insights/generate' })
     console.error('Generate insights error:', error);
 
     // Log failed generation

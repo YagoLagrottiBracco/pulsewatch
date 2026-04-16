@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import {
-import { captureError } from '@/lib/sentry'
   listTeamMembers,
   inviteTeamMember,
   removeTeamMember,
   updateMemberRole,
   getMemberLimit,
 } from '@/services/team'
+import { captureError } from '@/lib/sentry'
 
 // GET /api/team — lista membros do time
 export async function GET() {
@@ -28,7 +28,7 @@ export async function GET() {
 
     return NextResponse.json({ members, limit, tier })
   } catch (error) {
-    captureError(error, { module: 'src\app\api\team\route.ts' })
+    captureError(error, { module: 'api/team' })
     console.error('Erro ao listar time:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ member: result.member })
   } catch (error) {
-    captureError(error, { module: 'src\app\api\team\route.ts' })
+    captureError(error, { module: 'api/team' })
     console.error('Erro ao convidar membro:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -86,7 +86,7 @@ export async function PATCH(request: NextRequest) {
     const result = await updateMemberRole(user.id, memberId, role)
     return NextResponse.json(result)
   } catch (error) {
-    captureError(error, { module: 'src\app\api\team\route.ts' })
+    captureError(error, { module: 'api/team' })
     console.error('Erro ao atualizar membro:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -109,7 +109,7 @@ export async function DELETE(request: NextRequest) {
     const result = await removeTeamMember(user.id, memberId)
     return NextResponse.json(result)
   } catch (error) {
-    captureError(error, { module: 'src\app\api\team\route.ts' })
+    captureError(error, { module: 'api/team' })
     console.error('Erro ao remover membro:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

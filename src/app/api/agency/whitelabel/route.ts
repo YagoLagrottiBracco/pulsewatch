@@ -30,7 +30,7 @@ export async function GET() {
     const config = await getWhitelabelConfig(auth.user!.id)
     return NextResponse.json(config)
   } catch (error) {
-    captureError(error, { module: 'src\app\api\agency\whitelabel\route.ts' })
+    captureError(error, { module: 'api/agency/whitelabel' })
     console.error('Erro ao buscar whitelabel:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -46,7 +46,7 @@ export async function PUT(request: NextRequest) {
     const result = await updateWhitelabelConfig(auth.user!.id, body)
     return NextResponse.json(result)
   } catch (error) {
-    captureError(error, { module: 'src\app\api\agency\whitelabel\route.ts' })
+    captureError(error, { module: 'api/agency/whitelabel' })
     console.error('Erro ao atualizar whitelabel:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

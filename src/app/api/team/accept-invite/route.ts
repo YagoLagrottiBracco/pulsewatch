@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    captureError(error, { module: 'src\app\api\team\accept-invite\route.ts' })
+    captureError(error, { module: 'api/team/accept-invite' })
     console.error('Erro ao aceitar convite:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    captureError(error, { module: 'src\app\api\insights\actions\route.ts' })
+    captureError(error, { module: 'api/insights/actions' })
     console.error('POST /api/insights/actions error:', error);
     return NextResponse.json({ error: 'Erro interno', message: error.message }, { status: 500 });
   }

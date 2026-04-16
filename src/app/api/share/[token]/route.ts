@@ -62,7 +62,7 @@ export async function GET(
       insights: insights ?? [],
     });
   } catch (error: any) {
-    captureError(error, { module: 'src\app\api\share\:token\route.ts' })
+    captureError(error, { module: 'api/share/:token' })
     console.error('Share fetch error:', error);
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
   }
