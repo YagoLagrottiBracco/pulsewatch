@@ -12,7 +12,15 @@
       "Skill(gsd:autonomous)",
       "Skill(gsd:ui-phase)",
       "Bash(date:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(grep -rl \"account_members\\\\|audit_log\\\\|AuditActions\\\\|activity\" src/ --include=*.ts --include=*.tsx)",
+      "Bash(find supabase/migrations -name *.sql)",
+      "Bash(xargs grep:*)",
+      "Bash(ls .planning/phases/15-team-activity-feed/*-UI-SPEC.md)",
+      "Bash(ls:*)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({k:d[k] for k in [''''phase_number'''',''''phase_name'''',''''plans'''',''''incomplete_plans'''',''''plan_count'''',''''parallelization'''']}, indent=2\\)\\)\")",
+      "Bash(npx tsc:*)",
+      "Bash(! grep:*)"
     ]
   }
 }
