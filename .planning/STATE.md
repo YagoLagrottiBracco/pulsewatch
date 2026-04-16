@@ -2,24 +2,25 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
-status: executing
-last_updated: "2026-04-16T02:14:43.251Z"
+status: verifying
+last_updated: "2026-04-16T02:20:00.334Z"
 last_activity: 2026-04-16
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 7
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # GSD State
 
 ## Current Position
 
-Phase: 15 (team-activity-feed) — EXECUTING
-Plan: 2 of 2
-Status: Executing Phase 15 — Plan 01 complete, Plan 02 next
-Last activity: 2026-04-15 -- Phase 15 Plan 01 completed
+Phase: 15 (team-activity-feed) — COMPLETE
+Plan: 2 of 2 (all plans done)
+Status: Phase 15 complete — all plans executed, ready for validation/transition
+Last activity: 2026-04-16
+Stopped at: Completed 15-02-PLAN.md
 
 ## Milestone
 
@@ -56,3 +57,7 @@ v1.1 — Insights IA + Melhorias de Produto
 - Phase 15-01: ALERT_VIEWED: 'alert.viewed' added to AuditActions; markAsRead in alerts/page.tsx calls logAudit with ALERT_VIEWED after successful update
 - Phase 15-01: RLS policy "Owners can read team audit logs" uses subquery on account_members (not SECURITY DEFINER) -- additive, does not replace existing user policy
 - Phase 15-01: Partial index idx_account_members_owner_active_users WHERE user_id IS NOT NULL covers exact RLS subquery filter
+- Phase 15-02: isOwner null state prevents tab flash — tabs render only after ownership check resolves (null/true/false tri-state)
+- Phase 15-02: Team feed lazy-loaded on Time tab click via onValueChange + teamLoaded flag (not page mount)
+- Phase 15-02: myActivityContent extracted as JSX variable shared across three render branches to avoid duplication
+- Phase 15-02: emailMap built client-side from account_members; merged onto audit_log rows; owner's own entries show "Voce"

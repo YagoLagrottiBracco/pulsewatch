@@ -12,7 +12,7 @@
 - [x] **Phase 12: Post-Alert Guided Diagnosis** - Show contextual "what to do now" checklists when users view critical alerts (completed 2026-04-15)
 - [x] **Phase 13: Loss Calculator on Landing Page** - Add an interactive downtime loss calculator to the landing page (completed 2026-04-15)
 - [x] **Phase 14: CSV Export** - Allow users to export alerts and analytics data as CSV files (completed 2026-04-15)
-- [ ] **Phase 15: Team Activity Feed** - Give owners visibility into what each team member has done
+- [x] **Phase 15: Team Activity Feed** - Give owners visibility into what each team member has done (completed 2026-04-16)
 
 ---
 
@@ -78,7 +78,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 15-01-PLAN.md — Add ALERT_VIEWED audit action, wire into markAsRead, create RLS migration for team access
-- [ ] 15-02-PLAN.md — Refactor activity page with tabs, owner detection, and team feed UI
+- [x] 15-02-PLAN.md — Refactor activity page with tabs, owner detection, and team feed UI
 **UI hint**: yes
 
 ---
@@ -91,7 +91,7 @@ Plans:
 | 12. Post-Alert Guided Diagnosis | 1/1 | Complete    | 2026-04-15 |
 | 13. Loss Calculator on Landing Page | 0/1 | Complete    | 2026-04-15 |
 | 14. CSV Export | 1/1 | Complete   | 2026-04-16 |
-| 15. Team Activity Feed | 1/2 | In Progress|  |
+| 15. Team Activity Feed | 2/2 | Complete   | 2026-04-16 |
 
 ---
 
